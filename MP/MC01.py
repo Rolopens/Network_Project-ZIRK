@@ -15,12 +15,12 @@ class clientFrame(wx.Frame):
         self.SetBackgroundColour("WHITE")
 
         # PROMPTS FOR NAME, STORES RESULT IN userName
-        nameBox = wx.TextEntryDialog(None, "NAME: ", "Welcome, New Client", '')
+        nameBox = wx.TextEntryDialog(None, "What is your name?", "Welcome, New Client", '')
         if nameBox.ShowModal() == wx.ID_OK:
             userName = nameBox.GetValue()
 
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("Desktop/NETWORK/MP/rsrcs/header2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/header2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
 
@@ -39,32 +39,34 @@ class mainFrame(wx.Frame):
         self.mainPanel = wx.Panel(self)
         self.mainFont = wx.Font(20,wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.SetBackgroundColour("WHITE")
+        self.defaultLog = "***********************SERVER LOG************************\n"
 
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("Desktop/NETWORK/MP/rsrcs/header2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/header2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
 
         # ADD SERVER BUTTON (OFF)
-        imgServer = wx.Image("Desktop/NETWORK/MP/rsrcs/serverButton.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/serverButton.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer.Bind(wx.EVT_BUTTON,self.startServer)
 
         # ADD QUIT BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/MP/rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnQuit = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,160),(35,35))
         self.btnQuit.Bind(wx.EVT_BUTTON, self.Quit)
 
         # ADD CLEAR BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/MP/rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,195),(35,35))
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
         self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,240), size=(400,330))
+        self.log.SetValue(self.defaultLog)
         
         '''
         YNBox = wx.MessageDialog(None, "DTF or nah?", "Question", wx.YES_NO)
@@ -81,7 +83,7 @@ class mainFrame(wx.Frame):
         sys.exit()
 
     def Clear(self, e):
-        self.log.SetValue("")
+        self.log.SetValue(self.defaultLog)
         self.Refresh()
         
     def startServer (self,e):
@@ -91,13 +93,13 @@ class mainFrame(wx.Frame):
         self.btnServer.Hide()
 
         # ADD SERVER BUTTON (ON)
-        imgServer = wx.Image("Desktop/NETWORK/MP/rsrcs/serverButton2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/serverButton2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
 
         # ADD CLIENT BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/MP/rsrcs/addClient.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/addClient.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (100,160),(70,70))
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
