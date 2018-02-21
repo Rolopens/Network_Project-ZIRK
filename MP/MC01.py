@@ -34,16 +34,16 @@ class clientFrame(wx.Frame):
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
-        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,170), size=(400,350))
+        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,185), size=(400,350))
         self.log.SetValue(self.defaultLog)
 
         # INITIALIZE CHATBOX
-        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,520), size=(400,25))
+        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,535), size=(400,25))
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
         # INITIALIZE COMBO BOX
         chatOptions = ["Global"]
-        self.combo = wx.ComboBox(self.mainPanel,pos=(20,130),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
+        self.combo = wx.ComboBox(self.mainPanel,pos=(20,145),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
         self.combo.Bind(wx.EVT_COMBOBOX, self.updateChat)
         self.log.AppendText("Entered Global Chat\n")
 
@@ -73,9 +73,8 @@ class clientFrame(wx.Frame):
 
         # TIMER THREAD
         #self.receiving2()
-
         self.alias = self.userName
-
+        
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
         self.tlock.acquire()
@@ -86,6 +85,7 @@ class clientFrame(wx.Frame):
 
         if message != '':
             try:
+                print(self.alias)
                 self.s.sendto((self.alias + ": " + message).encode('utf-8'), self.server)
                 #self.log.AppendText(self.alias + "-> " + message + "\n")
             except:
@@ -115,7 +115,7 @@ class clientFrame(wx.Frame):
             finally:
                 self.tlock.release()
             # PLAY WITH THIS
-            time.sleep(.3)
+            time.sleep(.5)
 
     def receiving2(self):
         self.rT = threading.Timer(1, self.receiving2).start()
@@ -248,10 +248,9 @@ class mainFrame(wx.Frame):
             try:
                 self.tlock.acquire()
                 data, addr = self.s.recvfrom(1024)
-                
                 if addr not in self.clients:
                     self.clients.append(addr)
-
+            
                 self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
                 for client in self.clients:
                     self.s.sendto(data, client)
@@ -269,11 +268,10 @@ class mainFrame(wx.Frame):
         try:
             self.tlock.acquire()
             data, addr = self.s.recvfrom(1024)
-            print(str(addr))
-                
+            print(str(addr))    
             if addr not in self.clients:
                 self.clients.append(addr)
-
+                
             self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
 
             # SENDS TO EVERYONE
@@ -303,7 +301,7 @@ class mainFrame(wx.Frame):
     def addClient(self, e):
         # ADDS INSTANCE OF CLIENT FRAME
         client = clientFrame(None)
-        
+        print(self.clients)
         self.log.AppendText("Client Added!\n")
 
 def main():
