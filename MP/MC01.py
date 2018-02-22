@@ -12,7 +12,7 @@ class clientFrame(wx.Frame):
 
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(400,600)
+        self.SetSize(600,400)
         self.mainPanel = wx.Panel(self)
         self.SetBackgroundColour("WHITE")
         
@@ -26,28 +26,32 @@ class clientFrame(wx.Frame):
         # ADD HEADER PHOTO
         imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
-        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
+        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (90,0), (400,150))
 
         # ADD DISCONNECT BUTTON
         imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (335,135),(35,35))
+        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (500,20),(35,35))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
-        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,185), size=(400,350))
+        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,150), size=(430,180))
         self.log.SetValue(self.defaultLog)
 
         # INITIALIZE CHATBOX
-        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,535), size=(400,25))
+        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,330), size=(430,25))
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
-        # INITIALIZE COMBO BOX
+        # INITIALIZE LIST BOX
         chatOptions = ["Global","Ian","Kyle"]
         
-        self.combo = wx.ComboBox(self.mainPanel,pos=(20,145),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
-        self.combo.Bind(wx.EVT_COMBOBOX, self.updateChat)
-        self.combo.SetValue("Global")
+        #self.combo = wx.ComboBox(self.mainPanel,pos=(500,70),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
+        #self.combo.Bind(wx.EVT_COMBOBOX, self.updateChat)
+        #self.combo.SetValue("Global")
+        self.list = wx.ListBox(self.mainPanel,pos=(430,150),size = (170,205),choices = chatOptions , style = wx.LB_NEEDED_SB | wx.LB_SINGLE)
+        self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
+        self.list.SetSelection(0)
+        
         
         self.log.AppendText("Entered Global Chat\n")
 
@@ -78,7 +82,7 @@ class clientFrame(wx.Frame):
         # TIMER THREAD
         #self.receiving2()
         self.alias = self.userName
-        self.s.sendto((self.alias + " -> " + self.combo.GetValue() + ": " + self.alias + " has entered Zirk chat").encode('utf-8'), self.server)
+        self.s.sendto((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": " + self.alias + " has entered Zirk chat").encode('utf-8'), self.server)
         
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
@@ -90,7 +94,7 @@ class clientFrame(wx.Frame):
 
         if message != '':
             try:
-                self.s.sendto((self.alias + " -> " + self.combo.GetValue() + ": " + message).encode('utf-8'), self.server)
+                self.s.sendto((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": " + message).encode('utf-8'), self.server)
                 #self.log.AppendText(self.alias + "-> " + message + "\n")
             except:
                 pass
@@ -107,28 +111,19 @@ class clientFrame(wx.Frame):
 
                 while True:
                     data, addr = sock.recvfrom(1024)
-
                     data = str(data)
+
+                    # delete first 2 char and last char
                     data = data[2:]
                     data = data[:-1]
-<<<<<<< HEAD
-
-                    self.log.AppendText(data + "\n")
-                    print(data + " RECEIVED")
-=======
                     self.log.AppendText(str(data) + "\n")
                     print(str(data) + " RECEIVED")
->>>>>>> 324c228d2d5f5702459306ebe562a322c78d3cd3
             except:
                 pass
             finally:
                 self.tlock.release()
             # PLAY WITH THIS
-<<<<<<< HEAD
-            time.sleep(.3)
-=======
             time.sleep(.5)
->>>>>>> 324c228d2d5f5702459306ebe562a322c78d3cd3
 
     def receiving2(self):
         self.rT = threading.Timer(1, self.receiving2).start()
@@ -153,7 +148,7 @@ class clientFrame(wx.Frame):
 
     # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
     def updateChat (self, e):
-        chatMate = self.combo.GetValue()
+        chatMate = self.list.GetString(self.list.GetSelection())
         if chatMate == "Global":
             self.log.SetValue(self.defaultLog)
             self.log.AppendText("Entered Global Chat\n")
@@ -265,14 +260,7 @@ class mainFrame(wx.Frame):
                 data, addr = self.s.recvfrom(1024)
                 if addr not in self.clients:
                     self.clients.append(addr)
-<<<<<<< HEAD
-
-                # delete first 2 char and last char
-                #data = data[2:]
-                #data = data[:-1]
-=======
             
->>>>>>> 324c228d2d5f5702459306ebe562a322c78d3cd3
                 self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
                 for client in self.clients:
                     self.s.sendto(data, client)
@@ -300,26 +288,16 @@ class mainFrame(wx.Frame):
             print(str(addr))    
             if addr not in self.clients:
                 self.clients.append(addr)
-<<<<<<< HEAD
-
-            # delete first 2 char and last char
-=======
             #added code
             if addr not in self.names:
                 self.names[addr] = name
             print(self.names)
->>>>>>> 324c228d2d5f5702459306ebe562a322c78d3cd3
             data = str(data)
             data = data[2:]
             data = data[:-1]
             self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
 
             # SENDS TO EVERYONE
-<<<<<<< HEAD
-            for client in self.clients:
-                self.s.sendto(data.encode('utf-8'), client)
-                print(str(data) + " SENT")
-=======
             if (receiver == "Global"):
                 for client in self.clients:
                     self.s.sendto(data.encode('utf-8'), client)
@@ -329,7 +307,6 @@ class mainFrame(wx.Frame):
                     if (self.names[client] == receiver or self.names[client] == name):
                         self.s.sendto(data.encode('utf-8'), client)
                         print(str(data) + " SENT")
->>>>>>> 324c228d2d5f5702459306ebe562a322c78d3cd3
         except:
             pass
         finally:
@@ -352,13 +329,8 @@ class mainFrame(wx.Frame):
 
     def addClient(self, e):
         # ADDS INSTANCE OF CLIENT FRAME
-<<<<<<< HEAD
-        newClient = clientFrame(None)
-        
-=======
         client = clientFrame(None)
         print(self.clients)
->>>>>>> 324c228d2d5f5702459306ebe562a322c78d3cd3
         self.log.AppendText("Client Added!\n")
 
 def main():
