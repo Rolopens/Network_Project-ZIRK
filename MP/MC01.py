@@ -42,9 +42,12 @@ class clientFrame(wx.Frame):
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
         # INITIALIZE COMBO BOX
-        chatOptions = ["Global"]
+        chatOptions = ["Global","Ian","Kyle"]
+        
         self.combo = wx.ComboBox(self.mainPanel,pos=(20,145),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
         self.combo.Bind(wx.EVT_COMBOBOX, self.updateChat)
+        self.combo.SetValue("Global")
+        
         self.log.AppendText("Entered Global Chat\n")
 
         self.SetTitle("Welcome, " + self.userName)
@@ -74,6 +77,7 @@ class clientFrame(wx.Frame):
         # TIMER THREAD
         #self.receiving2()
         self.alias = self.userName
+        self.s.sendto((self.alias + " -> " + self.combo.GetValue() + ": " + self.alias + " has entered Zirk chat").encode('utf-8'), self.server)
         
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
@@ -85,8 +89,7 @@ class clientFrame(wx.Frame):
 
         if message != '':
             try:
-                print(self.alias)
-                self.s.sendto((self.alias + ": " + message).encode('utf-8'), self.server)
+                self.s.sendto((self.alias + " -> " + self.combo.GetValue() + ": " + message).encode('utf-8'), self.server)
                 #self.log.AppendText(self.alias + "-> " + message + "\n")
             except:
                 pass
@@ -109,7 +112,7 @@ class clientFrame(wx.Frame):
                     data = data[2:]
                     data = data[:-1]
                     self.log.AppendText(str(data) + "\n")
-                    print(str(data) + "RECEIVED")
+                    print(str(data) + " RECEIVED")
             except:
                 pass
             finally:
@@ -136,6 +139,7 @@ class clientFrame(wx.Frame):
         self.rT.join()
         self.s.close()
         self.log.AppendText("DISCONNECTED FROM SERVER\n")
+        self.Close()
 
     # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
     def updateChat (self, e):
@@ -146,7 +150,6 @@ class clientFrame(wx.Frame):
         else:
             self.log.SetValue(self.defaultLog)
             self.log.AppendText("Now chatting with " + chatMate + "\n")
-
 
 class mainFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -227,7 +230,9 @@ class mainFrame(wx.Frame):
         # local host
         self.port = 5000
         self.clients = []
-
+        #added code
+        self.names = {}
+        
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.s.bind((self.host,self.port))
         self.s.setblocking(0)
@@ -264,20 +269,39 @@ class mainFrame(wx.Frame):
             self.Refresh()
     
     def running2(self):
-        self.sT = threading.Timer(.1, self.running2).start()
+        self.sT = threading.Timer(.1, self.running2)
+        self.sT.setDaemon(True)
+        self.sT.start()
         try:
             self.tlock.acquire()
             data, addr = self.s.recvfrom(1024)
+            #added code
+            name = str(data)[2:].split(" -> ")[0]
+            receiver = str(data)[2:].split(" -> ")[1].split(": ")[0]
+            print(receiver)
+            print(name)
             print(str(addr))    
             if addr not in self.clients:
                 self.clients.append(addr)
-                
+            #added code
+            if addr not in self.names:
+                self.names[addr] = name
+            print(self.names)
+            data = str(data)
+            data = data[2:]
+            data = data[:-1]
             self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
 
             # SENDS TO EVERYONE
-            for client in self.clients:
-                self.s.sendto(data, client)
-                print(str(data) + "SENT")
+            if (receiver == "Global"):
+                for client in self.clients:
+                    self.s.sendto(data.encode('utf-8'), client)
+                    print(str(data) + " SENT")
+            else:
+                for client in self.clients:
+                    if (self.names[client] == receiver or self.names[client] == name):
+                        self.s.sendto(data.encode('utf-8'), client)
+                        print(str(data) + " SENT")
         except:
             pass
         finally:
