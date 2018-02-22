@@ -6,7 +6,8 @@ import threading
 
 class clientFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
-        super(clientFrame, self).__init__(*args, **kwargs)
+        style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
+        super(clientFrame, self).__init__(*args, **kwargs, style = style)
         self.initialize()
 
     def initialize(self):
