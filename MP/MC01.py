@@ -23,12 +23,12 @@ class clientFrame(wx.Frame):
         self.defaultLog = "USER LOG:    " + self.userName + "\n"
         
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
 
         # ADD DISCONNECT BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (335,135),(35,35))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
@@ -103,19 +103,19 @@ class clientFrame(wx.Frame):
 
                 while True:
                     data, addr = sock.recvfrom(1024)
-                    data = str(data)
 
-                    # delete first 2 char and last char
+                    data = str(data)
                     data = data[2:]
                     data = data[:-1]
-                    self.log.AppendText(str(data) + "\n")
-                    print(str(data) + "RECEIVED")
+
+                    self.log.AppendText(data + "\n")
+                    print(data + " RECEIVED")
             except:
                 pass
             finally:
                 self.tlock.release()
             # PLAY WITH THIS
-            time.sleep(.2)
+            time.sleep(.3)
 
     def receiving2(self):
         self.rT = threading.Timer(1, self.receiving2).start()
@@ -162,24 +162,24 @@ class mainFrame(wx.Frame):
         self.defaultLog = "***********************SERVER LOG************************\n"
 
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
 
         # ADD SERVER BUTTON (OFF)
-        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/serverButton.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/serverButton.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer.Bind(wx.EVT_BUTTON,self.startServer)
 
         # ADD QUIT BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnQuit = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,160),(35,35))
         self.btnQuit.Bind(wx.EVT_BUTTON, self.Quit)
 
         # ADD CLEAR BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,195),(35,35))
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
@@ -207,13 +207,13 @@ class mainFrame(wx.Frame):
         self.btnServer.Hide()
 
         # ADD SERVER BUTTON (ON)
-        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/serverButton2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/serverButton2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
 
         # ADD CLIENT BUTTON
-        imgServer = wx.Image("Desktop/NETWORK/Network_Project-ZIRK/MP/rsrcs/clientAdd.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/clientAdd.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (100,160),(70,70))
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
@@ -252,6 +252,9 @@ class mainFrame(wx.Frame):
                 if addr not in self.clients:
                     self.clients.append(addr)
 
+                # delete first 2 char and last char
+                #data = data[2:]
+                #data = data[:-1]
                 self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
                 for client in self.clients:
                     self.s.sendto(data, client)
@@ -274,12 +277,16 @@ class mainFrame(wx.Frame):
             if addr not in self.clients:
                 self.clients.append(addr)
 
+            # delete first 2 char and last char
+            data = str(data)
+            data = data[2:]
+            data = data[:-1]
             self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
 
             # SENDS TO EVERYONE
             for client in self.clients:
-                self.s.sendto(data, client)
-                print(str(data) + "SENT")
+                self.s.sendto(data.encode('utf-8'), client)
+                print(str(data) + " SENT")
         except:
             pass
         finally:
@@ -302,7 +309,7 @@ class mainFrame(wx.Frame):
 
     def addClient(self, e):
         # ADDS INSTANCE OF CLIENT FRAME
-        client = clientFrame(None)
+        newClient = clientFrame(None)
         
         self.log.AppendText("Client Added!\n")
 
