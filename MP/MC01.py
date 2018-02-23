@@ -43,7 +43,7 @@ class clientFrame(wx.Frame):
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
         # INITIALIZE LIST BOX
-        chatOptions = ["Global","Ian","Kyle"]
+        chatOptions = ["Global"]
         
         #self.combo = wx.ComboBox(self.mainPanel,pos=(500,70),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
         #self.combo.Bind(wx.EVT_COMBOBOX, self.updateChat)
@@ -60,7 +60,7 @@ class clientFrame(wx.Frame):
         self.Show()
 
         self.connect()
-    
+        
     def connect(self):
         self.tlock = threading.Lock()
         self.shutdown = False
@@ -82,7 +82,11 @@ class clientFrame(wx.Frame):
         # TIMER THREAD
         #self.receiving2()
         self.alias = self.userName
-        self.s.sendto((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": " + self.alias + " has entered Zirk chat").encode('utf-8'), self.server)
+        self.s.sendto(("@@connected " + self.alias).encode('utf-8'), self.server)
+
+    def initList(self, oldList):
+        for user in oldList:
+            self.list.Append(user)
         
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
@@ -116,7 +120,13 @@ class clientFrame(wx.Frame):
                     # delete first 2 char and last char
                     data = data[2:]
                     data = data[:-1]
-                    self.log.AppendText(str(data) + "\n")
+                    if " -> " not in data and "joined Zirk chat" in data:
+                        self.list.Append(data.split(" has ")[0])
+                        print("HERE")
+                        print(data)
+                        self.log.AppendText((data) + "\n")
+                    else:
+                        self.log.AppendText((data) + "\n")
                     print(str(data) + " RECEIVED")
             except:
                 pass
@@ -237,6 +247,7 @@ class mainFrame(wx.Frame):
         self.clients = []
         #added code
         self.names = {}
+        self.aliases = []
         
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.s.bind((self.host,self.port))
@@ -280,10 +291,16 @@ class mainFrame(wx.Frame):
         try:
             self.tlock.acquire()
             data, addr = self.s.recvfrom(1024)
-            #added code
-            name = str(data)[2:].split(" -> ")[0]
-            receiver = str(data)[2:].split(" -> ")[1].split(": ")[0]
-            print(receiver)
+            data = str(data)
+            data = data[2:]
+            data = data[:-1]
+            if "@@connected" in data and " -> " not in data:
+                name = data.split(" ")[1]
+                receiver = "Global"
+                data = name + " has joined Zirk chat"
+            elif " -> " in data:
+                name = data.split(" -> ")[0]
+                receiver = data.split(" -> ")[1].split(": ")[0]
             print(name)
             print(str(addr))    
             if addr not in self.clients:
@@ -291,11 +308,12 @@ class mainFrame(wx.Frame):
             #added code
             if addr not in self.names:
                 self.names[addr] = name
+            if name not in self.aliases:
+                self.aliases.append(name)
+                
             print(self.names)
-            data = str(data)
-            data = data[2:]
-            data = data[:-1]
-            self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
+                
+            self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + data + "\n")
 
             # SENDS TO EVERYONE
             if (receiver == "Global"):
@@ -330,6 +348,7 @@ class mainFrame(wx.Frame):
     def addClient(self, e):
         # ADDS INSTANCE OF CLIENT FRAME
         client = clientFrame(None)
+        client.initList(self.aliases)
         print(self.clients)
         self.log.AppendText("Client Added!\n")
 
