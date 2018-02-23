@@ -23,12 +23,12 @@ class clientFrame(wx.Frame):
         self.defaultLog = "USER LOG:    " + self.userName + "\n"
         
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("/rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (90,0), (400,150))
 
         # ADD DISCONNECT BUTTON
-        imgServer = wx.Image("/rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (500,20),(35,35))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
@@ -168,6 +168,7 @@ class clientFrame(wx.Frame):
         self.Close()
 
     # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
+    print()
     def updateChat (self, e):
         chatMate = self.list.GetString(self.list.GetSelection())
         if chatMate == "Global":
@@ -191,24 +192,24 @@ class mainFrame(wx.Frame):
         self.defaultLog = "***********************SERVER LOG************************\n"
 
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("/rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
 
         # ADD SERVER BUTTON (OFF)
-        imgServer = wx.Image("/rsrcs/serverButton-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/serverButton-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer.Bind(wx.EVT_BUTTON,self.startServer)
 
         # ADD QUIT BUTTON
-        imgServer = wx.Image("/rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnQuit = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,160),(35,35))
         self.btnQuit.Bind(wx.EVT_BUTTON, self.Quit)
 
         # ADD CLEAR BUTTON
-        imgServer = wx.Image("/rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,195),(35,35))
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
@@ -236,13 +237,13 @@ class mainFrame(wx.Frame):
         self.btnServer.Hide()
 
         # ADD SERVER BUTTON (ON)
-        imgServer = wx.Image("/rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
 
         # ADD CLIENT BUTTON
-        imgServer = wx.Image("/rsrcs/clientAdd-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/clientAdd-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (100,160),(70,70))
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
@@ -316,8 +317,8 @@ class mainFrame(wx.Frame):
             
             
             elif " -> " in data:
-                name = str(data)[2:].split(" -> ")[0]
-                receiver = str(data)[2:].split(" -> ")[1].split(": ")[0]
+                name = data.split(" -> ")[0]
+                receiver = data.split(" -> ")[1].split(": ")[0]
             
             if addr not in self.clients:
                 self.clients.append(addr)
@@ -341,7 +342,8 @@ class mainFrame(wx.Frame):
                     self.aliases.append(name)
             
             self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
-
+            print(name)
+            print(receiver)
             # SENDS TO EVERYONE
             if (receiver == "Global"):
                 for client in self.clients:
