@@ -122,11 +122,8 @@ class clientFrame(wx.Frame):
                     data = data[:-1]
                     if " -> " not in data and "joined Zirk chat" in data:
                         self.list.Append(data.split(" has ")[0])
-                        print("HERE")
-                        print(data)
-                        self.log.AppendText((data) + "\n")
-                    else:
-                        self.log.AppendText((data) + "\n")
+                        
+                    self.log.AppendText((data) + "\n")
                     print(str(data) + " RECEIVED")
             except:
                 pass
@@ -295,7 +292,7 @@ class mainFrame(wx.Frame):
             data = data[2:]
             data = data[:-1]
             if "@@connected" in data and " -> " not in data:
-                name = data.split(" ")[1]
+                name = data.split("@@connected")[1]
                 receiver = "Global"
                 data = name + " has joined Zirk chat"
             elif " -> " in data:
@@ -356,5 +353,7 @@ def main():
     app = wx.App()
     mainFrame(None)
     app.MainLoop()
-
-main()
+try:
+    main()
+except:
+    sys.exit()
