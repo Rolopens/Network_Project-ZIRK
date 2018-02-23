@@ -15,7 +15,6 @@ class clientFrame(wx.Frame):
         self.SetSize(600,400)
         self.mainPanel = wx.Panel(self)
         self.SetBackgroundColour("WHITE")
-        
 
         # PROMPTS FOR NAME, STORES RESULT IN userName
         nameBox = wx.TextEntryDialog(None, "What is your name?", "Welcome, New Client", '')
@@ -24,12 +23,12 @@ class clientFrame(wx.Frame):
         self.defaultLog = "USER LOG:    " + self.userName + "\n"
         
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("/rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (90,0), (400,150))
 
         # ADD DISCONNECT BUTTON
-        imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("/rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (500,20),(35,35))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
@@ -60,7 +59,7 @@ class clientFrame(wx.Frame):
         self.Show()
 
         self.connect()
-        
+    
     def connect(self):
         self.tlock = threading.Lock()
         self.shutdown = False
@@ -104,7 +103,7 @@ class clientFrame(wx.Frame):
                 pass
         
         self.tlock.release()
-        time.sleep(.3)
+        time.sleep(.2)
 
     # ERROR HERE
     def receiving(self,name, sock):
@@ -120,17 +119,31 @@ class clientFrame(wx.Frame):
                     # delete first 2 char and last char
                     data = data[2:]
                     data = data[:-1]
+
                     if " -> " not in data and "joined Zirk chat" in data:
-                        self.list.Append(data.split(" has ")[0])
-                        
-                    self.log.AppendText((data) + "\n")
+                        name = data.split(" has")[0]
+                        self.list.Append(name)
+                    elif " -> " not in data and "disconnected" in data:
+                        name = data.split(" has ")[0]
+                        self.deleteInList(name)
+
+                    
+                    self.log.AppendText(str(data) + "\n")
                     print(str(data) + " RECEIVED")
             except:
                 pass
             finally:
                 self.tlock.release()
             # PLAY WITH THIS
-            time.sleep(.5)
+            time.sleep(.2)
+
+    def deleteInList(self, name):
+        i = self.list.GetCount()
+        for x in range (0, i):
+            if (name == self.list.GetString(x)):
+                y = x
+        self.list.Delete(y)
+        self.Refresh()
 
     def receiving2(self):
         self.rT = threading.Timer(1, self.receiving2).start()
@@ -147,6 +160,7 @@ class clientFrame(wx.Frame):
         #time.sleep(.2)
 
     def disconnect(self,e):
+        self.s.sendto(("@@disconnected " + self.alias).encode('utf-8'), self.server)
         self.shutdown = True
         self.rT.join()
         self.s.close()
@@ -170,31 +184,31 @@ class mainFrame(wx.Frame):
     
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(400,600)
+        self.SetSize(415,600)
         self.mainPanel = wx.Panel(self)
         self.mainFont = wx.Font(20,wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.SetBackgroundColour("WHITE")
         self.defaultLog = "***********************SERVER LOG************************\n"
 
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("/rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
         imgHeader = wx.Bitmap(imgHeader)
         self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
 
         # ADD SERVER BUTTON (OFF)
-        imgServer = wx.Image("rsrcs/serverButton.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("/rsrcs/serverButton-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer.Bind(wx.EVT_BUTTON,self.startServer)
 
         # ADD QUIT BUTTON
-        imgServer = wx.Image("rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("/rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnQuit = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,160),(35,35))
         self.btnQuit.Bind(wx.EVT_BUTTON, self.Quit)
 
         # ADD CLEAR BUTTON
-        imgServer = wx.Image("rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("/rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
         self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,195),(35,35))
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
@@ -222,13 +236,13 @@ class mainFrame(wx.Frame):
         self.btnServer.Hide()
 
         # ADD SERVER BUTTON (ON)
-        imgServer = wx.Image("rsrcs/serverButton2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("/rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
         self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
 
         # ADD CLIENT BUTTON
-        imgServer = wx.Image("rsrcs/clientAdd.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("/rsrcs/clientAdd-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
         imgServer = wx.Bitmap(imgServer)
         self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (100,160),(70,70))
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
@@ -288,29 +302,45 @@ class mainFrame(wx.Frame):
         try:
             self.tlock.acquire()
             data, addr = self.s.recvfrom(1024)
+            
+            #added code
             data = str(data)
             data = data[2:]
             data = data[:-1]
-            if "@@connected" in data and " -> " not in data:
-                name = data.split("@@connected")[1]
+
+            
+            if "@@connected"  in data and " -> " not in data:
+                name = data.split("@@connected ")[1]
                 receiver = "Global"
                 data = name + " has joined Zirk chat"
+            
+            
             elif " -> " in data:
-                name = data.split(" -> ")[0]
-                receiver = data.split(" -> ")[1].split(": ")[0]
-            print(name)
-            print(str(addr))    
+                name = str(data)[2:].split(" -> ")[0]
+                receiver = str(data)[2:].split(" -> ")[1].split(": ")[0]
+            
             if addr not in self.clients:
                 self.clients.append(addr)
+                
             #added code
             if addr not in self.names:
                 self.names[addr] = name
-            if name not in self.aliases:
-                self.aliases.append(name)
-                
-            print(self.names)
-                
-            self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + data + "\n")
+            
+            if "@@disconnected" in data and " -> " not in data:
+                name = data.split("@@disconnected ")[1]
+                receiver = "Global"
+                data = name + " has disconnected"
+                for client in self.clients:
+                    if (self.names[client] == name):
+                        del self.names[client]
+                        self.aliases.remove(name)
+                        self.clients.remove(client)
+                        break
+            else:
+                if name not in self.aliases:
+                    self.aliases.append(name)
+            
+            self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
 
             # SENDS TO EVERYONE
             if (receiver == "Global"):
@@ -353,6 +383,7 @@ def main():
     app = wx.App()
     mainFrame(None)
     app.MainLoop()
+
 try:
     main()
 except:
