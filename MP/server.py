@@ -11,37 +11,37 @@ class serverFrame(wx.Frame):
     
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(415,600)
+        self.SetSize(315,500)
         self.mainPanel = wx.Panel(self)
         self.mainFont = wx.Font(20,wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.SetBackgroundColour("WHITE")
-        self.defaultLog = "***********************SERVER LOG************************\n"
+        self.defaultLog = "***************SERVER LOG****************\n"
 
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("rsrcs/header2_1.jpg", wx.BITMAP_TYPE_ANY).Scale(315,130)
         imgHeader = wx.Bitmap(imgHeader)
-        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (400,150))
+        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (0,0), (315,130))
 
         # ADD SERVER BUTTON (OFF)
-        imgServer = wx.Image("rsrcs/serverButton-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/serverButton-1.jpg", wx.BITMAP_TYPE_ANY).Scale(60,60)
         imgServer = wx.Bitmap(imgServer)
-        self.btnServer = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
+        self.btnServer = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,130),(60,60))
         self.btnServer.Bind(wx.EVT_BUTTON,self.startServer)
 
         # ADD QUIT BUTTON
         imgServer = wx.Image("rsrcs/quitButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.btnQuit = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,160),(35,35))
+        self.btnQuit = wx.BitmapButton(self.mainPanel, -1, imgServer, (80,130),(30,30))
         self.btnQuit.Bind(wx.EVT_BUTTON, self.Quit)
 
         # ADD CLEAR BUTTON
         imgServer = wx.Image("rsrcs/clearButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (180,195),(35,35))
+        self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (80,160),(30,30))
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
-        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,240), size=(400,330))
+        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,200), size=(300,270))
         self.log.SetValue(self.defaultLog)
         
         self.SetTitle("Main Server")
@@ -63,9 +63,9 @@ class serverFrame(wx.Frame):
         self.btnServer.Hide()
 
         # ADD SERVER BUTTON (ON)
-        imgServer = wx.Image("rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(60,60)
         imgServer = wx.Bitmap(imgServer)
-        self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,160),(70,70))
+        self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,130),(60,60))
         self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
 
         '''

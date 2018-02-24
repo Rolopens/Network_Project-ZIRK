@@ -12,7 +12,7 @@ class clientFrame(wx.Frame):
 
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(600,400)
+        self.SetSize(525,350)
         self.mainPanel = wx.Panel(self)
         self.SetBackgroundColour("WHITE")
 
@@ -23,22 +23,22 @@ class clientFrame(wx.Frame):
         self.defaultLog = "USER LOG:    " + self.userName + "\n"
         
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(400, 150)
+        imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(315,130)
         imgHeader = wx.Bitmap(imgHeader)
-        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (90,0), (400,150))
+        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (90,0), (315,130))
 
         # ADD DISCONNECT BUTTON
         imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (500,20),(35,35))
+        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (490,100),(30,30))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
-        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,150), size=(430,180))
+        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
         self.log.SetValue(self.defaultLog)
 
         # INITIALIZE CHATBOX
-        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,330), size=(430,25))
+        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
         # INITIALIZE LIST BOX
@@ -47,7 +47,7 @@ class clientFrame(wx.Frame):
         #self.combo = wx.ComboBox(self.mainPanel,pos=(500,70),choices = chatOptions , style = wx.CB_DROPDOWN | wx.CB_READONLY) 
         #self.combo.Bind(wx.EVT_COMBOBOX, self.updateChat)
         #self.combo.SetValue("Global")
-        self.list = wx.ListBox(self.mainPanel,pos=(430,150),size = (170,205),choices = chatOptions , style = wx.LB_NEEDED_SB | wx.LB_SINGLE)
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = chatOptions , style = wx.LB_NEEDED_SB | wx.LB_SINGLE)
         self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
         self.list.SetSelection(0)
         
@@ -168,7 +168,6 @@ class clientFrame(wx.Frame):
         self.Close()
 
     # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
-    print()
     def updateChat (self, e):
         chatMate = self.list.GetString(self.list.GetSelection())
         if chatMate == "Global":
@@ -185,20 +184,20 @@ class client(wx.Frame):
     
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(300,300)
+        self.SetSize(200,200)
         self.mainPanel = wx.Panel(self)
         self.mainFont = wx.Font(20,wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL)
         self.SetBackgroundColour("WHITE")
         
         # ADD HEADER PHOTO
-        imgHeader = wx.Image("rsrcs/smallheader.jpg", wx.BITMAP_TYPE_ANY).Scale(120, 150)
+        imgHeader = wx.Image("rsrcs/smallheader.jpg", wx.BITMAP_TYPE_ANY).Scale(110, 130)
         imgHeader = wx.Bitmap(imgHeader)
-        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (97,20), (100,130))
+        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (10,20), (110,130))
 
         # ADD CLIENT BUTTON
-        imgServer = wx.Image("rsrcs/clientAdd-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
+        imgServer = wx.Image("rsrcs/clientAdd-1.jpg", wx.BITMAP_TYPE_ANY).Scale(60,60)
         imgServer = wx.Bitmap(imgServer)
-        self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (105,170),(70,70))
+        self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (120,60),(60,60))
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
         
         self.SetTitle("Add Client")
@@ -218,5 +217,4 @@ class client(wx.Frame):
 def main():
     clientApp = wx.App()
     client(None)
-    
     clientApp.MainLoop()
