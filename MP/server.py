@@ -40,6 +40,12 @@ class serverFrame(wx.Frame):
         self.btnClear = wx.BitmapButton(self.mainPanel, -1, imgServer, (80,160),(30,30))
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
 
+        # ADD PREFERRED BUTTON
+        imgServer = wx.Image("rsrcs/Chro.png", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Bitmap(imgServer)
+        self.preferredButton = wx.BitmapButton(self.mainPanel, -1, imgServer, (120,130),(30,30))
+        self.preferredButton.Bind(wx.EVT_BUTTON, self.setPreferredPort)
+
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
         self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,200), size=(300,270))
         self.log.SetValue(self.defaultLog)
@@ -47,6 +53,13 @@ class serverFrame(wx.Frame):
         self.SetTitle("Main Server")
         self.Center()
         self.Show()
+
+    def setPreferredPort(self, e):
+        portBox = wx.TextEntryDialog(None, "Type selected port", "Port Preferrence", '')
+        if portBox.ShowModal() == wx.ID_OK:
+            file = open("preferredPort.txt", "w")
+            file.write(portBox.GetValue())
+            file.close()
         
     def Quit(self, e):
         # EXITS APP
@@ -61,6 +74,7 @@ class serverFrame(wx.Frame):
     def startServer (self,e):
         # HIDE SERVER (OFF) BUTTON
         self.btnServer.Hide()
+        self.preferredButton.Hide()
 
         # ADD SERVER BUTTON (ON)
         imgServer = wx.Image("rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(60,60)
@@ -76,9 +90,16 @@ class serverFrame(wx.Frame):
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
         '''
 
-        portBox = wx.TextEntryDialog(None, "Start server on which port?", "Port Selection", '')
-        if portBox.ShowModal() == wx.ID_OK:
-            self.port = int(portBox.GetValue())
+        file = open("preferredPort.txt", "r")
+        temp = file.readline()
+        
+        if temp!= '':
+            self.port = int(temp)
+            file.close()
+        else:
+            portBox = wx.TextEntryDialog(None, "Start server on which port?", "Port Selection", '')
+            if portBox.ShowModal() == wx.ID_OK:
+                self.port = int(portBox.GetValue())
         
         self.log.SetBackgroundColour((148,255,106))
         self.log.AppendText("SERVER STARTING ON PORT " + str(self.port) + "\n")
@@ -199,6 +220,7 @@ class serverFrame(wx.Frame):
         # HIDES AND SHOWS APPROPRIATE BUTTONS
         self.btnServer.Show()
         self.btnServer2.Hide()
+        self.preferredButton.Show()
 
         # SHUTS SERVER DOWN, CLOSES THREAD
         self.quitting = True
