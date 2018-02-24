@@ -67,7 +67,10 @@ class clientFrame(wx.Frame):
         self.host = '127.0.0.1'
         self.port = 0
 
-        self.server = ('127.0.0.1', 5000)
+        portBox = wx.TextEntryDialog(None, "Input port number of desired server", "Server Selection", '')
+        if portBox.ShowModal() == wx.ID_OK:
+            self.serverPort = int(portBox.GetValue())
+        self.server = ('127.0.0.1', self.serverPort)
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         # DGRAM is used for UDP

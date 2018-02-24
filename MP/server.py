@@ -75,15 +75,21 @@ class serverFrame(wx.Frame):
         self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (100,160),(70,70))
         self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
         '''
+
+        portBox = wx.TextEntryDialog(None, "Start server on which port?", "Port Selection", '')
+        if portBox.ShowModal() == wx.ID_OK:
+            self.port = int(portBox.GetValue())
         
         self.log.SetBackgroundColour((148,255,106))
-        self.log.AppendText("SERVER STARTING...\n")
+        self.log.AppendText("SERVER STARTING ON PORT " + str(self.port) + "\n")
         self.Refresh()
+
+        
 
         # SERVER SHIT
         self.host = '127.0.0.1'
         # local host
-        self.port = 5000
+        #self.port = 5000
         self.clients = []
         #added code
         self.names = {}
