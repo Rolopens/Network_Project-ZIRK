@@ -41,9 +41,9 @@ class serverFrame(wx.Frame):
         self.btnClear.Bind(wx.EVT_BUTTON, self.Clear)
 
         # ADD PREFERRED BUTTON
-        imgServer = wx.Image("rsrcs/Chro.png", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Image("rsrcs/savePreferences.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.preferredButton = wx.BitmapButton(self.mainPanel, -1, imgServer, (120,130),(30,30))
+        self.preferredButton = wx.BitmapButton(self.mainPanel, -1, imgServer, (110,130),(30,30))
         self.preferredButton.Bind(wx.EVT_BUTTON, self.setPreferredPort)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
