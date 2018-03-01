@@ -124,12 +124,13 @@ class serverFrame(wx.Frame):
         self.tlock = threading.Lock()
 
         # THREAD 1
-        #self.sT = threading.Thread(target=self.running, args=("ServerThread", self.s))
-        #self.sT.start()
+        self.sT = threading.Thread(target=self.running, args=("ServerThread", self.s))
+        self.sT.setDaemon(True)
+        self.sT.start()
 
         # THREAD 2 (TIMER)
         
-        self.running2()
+        #self.running2()
     
     def running(self, name, sock):
         # THREAD
@@ -137,20 +138,67 @@ class serverFrame(wx.Frame):
             try:
                 self.tlock.acquire()
                 data, addr = self.s.recvfrom(1024)
+            
+                #added code
+                data = str(data.decode())
+            
+                if "@@connected"  in data and " -> " not in data:
+                    name = data.split("@@connected ")[1]
+                    receiver = "Global"
+                    data = name + " has joined Zirk chat"
+                elif "@@initlist " in data and " -> " not in data:
+                    name = data.split("@@initlist ")[1]
+                    receiver = name
+                    data = "@@initlist "
+                elif " -> " in data:
+                    name = data.split(" -> ")[0]
+                    receiver = data.split(" -> ")[1].split(": ")[0]
+            
                 if addr not in self.clients:
                     self.clients.append(addr)
+                
+                #added code
+                if addr not in self.names:
+                    self.names[addr] = name
+            
+                if "@@disconnected" in data and " -> " not in data:
+                    name = data.split("@@disconnected ")[1]
+                    receiver = "Global"
+                    data = name + " has disconnected"
+                    for client in self.clients:
+                        if (self.names[client] == name):
+                            del self.names[client]
+                            self.aliases.remove(name)
+                            self.clients.remove(client)
+                            break
+                else:
+                    if name not in self.aliases:
+                        self.aliases.append(name)
             
                 self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
-                for client in self.clients:
-                    self.s.sendto(data, client)
-                
-                time.sleep(.1)
+                # SENDS TO EVERYONE
+                if (receiver == "Global"):
+                    for client in self.clients:
+                        self.s.sendto(data.encode('utf-8'), client)
+                        print(str(data) + " SENT")
+                else:
+                    if "@@initlist " in data and " -> " not in data:
+                        for client in self.clients:
+                            if (self.names[client] == receiver or self.names[client] == name):
+                                for i in self.aliases:
+                                    self.s.sendto((data + i).encode('utf-8'), client)
+                                    print(str(data)+i + " SENT")
+                                break
+
+                    else:
+                        for client in self.clients:
+                            if (self.names[client] == receiver or self.names[client] == name):
+                                self.s.sendto(data.encode('utf-8'), client)
+                                print(str(data) + " SENT")
             except:
                 pass
             finally:
                 self.tlock.release()
-                time.sleep(.1)
-            self.Refresh()
     
     def running2(self):
         self.sT = threading.Timer(.1, self.running2)
