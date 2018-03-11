@@ -3,6 +3,8 @@ import sys
 import socket
 import time
 import threading
+from threading import Thread
+import select
 
 class serverFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -72,24 +74,6 @@ class serverFrame(wx.Frame):
         self.Refresh()
         
     def startServer (self,e):
-        # HIDE SERVER (OFF) BUTTON
-        self.btnServer.Hide()
-        self.preferredButton.Hide()
-
-        # ADD SERVER BUTTON (ON)
-        imgServer = wx.Image("rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(60,60)
-        imgServer = wx.Bitmap(imgServer)
-        self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,130),(60,60))
-        self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
-
-        '''
-        # ADD CLIENT BUTTON
-        imgServer = wx.Image("rsrcs/clientAdd-1.jpg", wx.BITMAP_TYPE_ANY).Scale(70,70)
-        imgServer = wx.Bitmap(imgServer)
-        self.btnClient = wx.BitmapButton(self.mainPanel, -1, imgServer, (100,160),(70,70))
-        self.btnClient.Bind(wx.EVT_BUTTON, self.addClient)
-        '''
-
         file = open("preferredPort.txt", "r")
         temp = file.readline()
         
@@ -100,169 +84,172 @@ class serverFrame(wx.Frame):
             portBox = wx.TextEntryDialog(None, "Start server on which port?", "Port Selection", '')
             if portBox.ShowModal() == wx.ID_OK:
                 self.port = int(portBox.GetValue())
-        
-        self.log.SetBackgroundColour((148,255,106))
-        self.log.AppendText("SERVER STARTING ON PORT " + str(self.port) + "\n")
-        self.Refresh()
-
-        
 
         # SERVER SHIT
         self.host = '127.0.0.1'
-        # local host
-        #self.port = 5000
-        self.clients = []
-        #added code
-        self.names = {}
-        self.aliases = []
-        
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.s.bind((self.host,self.port))
-        self.s.setblocking(0)
 
-        self.quitting = False
-        self.tlock = threading.Lock()
+        # MAPS ADDRESS TO NAME
+        self.clients={}
+        # MAPS ADDRESS TO PORT
+        self.addresses={}
 
-        # THREAD 1
-        self.sT = threading.Thread(target=self.running, args=("ServerThread", self.s))
-        self.sT.setDaemon(True)
-        self.sT.start()
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        # THREAD 2 (TIMER)
-        
-        #self.running2()
-    
-    def running(self, name, sock):
-        # THREAD
-        while not self.quitting:
-            try:
-                self.tlock.acquire()
-                data, addr = self.s.recvfrom(1024)
-            
-                #added code
-                data = str(data.decode())
-            
-                if "@@connected"  in data and " -> " not in data:
-                    name = data.split("@@connected ")[1]
-                    receiver = "Global"
-                    data = name + " has joined Zirk chat"
-                elif "@@initlist " in data and " -> " not in data:
-                    name = data.split("@@initlist ")[1]
-                    receiver = name
-                    data = "@@initlist "
-                elif " -> " in data:
-                    name = data.split(" -> ")[0]
-                    receiver = data.split(" -> ")[1].split(": ")[0]
-            
-                if addr not in self.clients:
-                    self.clients.append(addr)
-                
-                #added code
-                if addr not in self.names:
-                    self.names[addr] = name
-            
-                if "@@disconnected" in data and " -> " not in data:
-                    name = data.split("@@disconnected ")[1]
-                    receiver = "Global"
-                    data = name + " has disconnected"
-                    for client in self.clients:
-                        if (self.names[client] == name):
-                            del self.names[client]
-                            self.aliases.remove(name)
-                            self.clients.remove(client)
-                            break
-                else:
-                    if name not in self.aliases:
-                        self.aliases.append(name)
-            
-                self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
-                # SENDS TO EVERYONE
-                if (receiver == "Global"):
-                    for client in self.clients:
-                        self.s.sendto(data.encode('utf-8'), client)
-                        print(str(data) + " SENT")
-                else:
-                    if "@@initlist " in data and " -> " not in data:
-                        for client in self.clients:
-                            if (self.names[client] == receiver or self.names[client] == name):
-                                for i in self.aliases:
-                                    self.s.sendto((data + i).encode('utf-8'), client)
-                                    print(str(data)+i + " SENT")
-                                break
+        success= False
 
-                    else:
-                        for client in self.clients:
-                            if (self.names[client] == receiver or self.names[client] == name):
-                                self.s.sendto(data.encode('utf-8'), client)
-                                print(str(data) + " SENT")
-            except:
-                pass
-            finally:
-                self.tlock.release()
-    
-    def running2(self):
-        self.sT = threading.Timer(.1, self.running2)
-        self.sT.setDaemon(True)
-        self.sT.start()
+        # ATTEMPTS BINDING TO PORT
         try:
-            self.tlock.acquire()
-            data, addr = self.s.recvfrom(1024)
-            
-            #added code
-            data = str(data)
-            data = data[2:]
-            data = data[:-1]
+            self.s.bind((self.host,self.port))
+            self.log.SetBackgroundColour((148,255,106))
+            success=True
+            self.log.AppendText("SERVER STARTING ON PORT " + str(self.port) + "\n")
+        except:
+            self.log.AppendText("PORT " + str(self.port) + " IS TAKEN, UNABLE TO START SERVER\n")
 
-            
-            if "@@connected"  in data and " -> " not in data:
-                name = data.split("@@connected ")[1]
+        # STARTS SERVER IF PORT IS NOT TAKEN
+        if (success):
+            self.quitting = False
+
+            # ACTIVATE LISTENING THREAD
+            self.s.listen(100)
+            self.lT = threading.Thread(target=self.listening)
+            self.lT.setDaemon(True)
+            self.lT.start()
+
+            # HIDE SERVER (OFF) BUTTON
+            self.btnServer.Hide()
+            self.preferredButton.Hide()
+
+            # ADD SERVER BUTTON (ON)
+            imgServer = wx.Image("rsrcs/serverButton-2.jpg", wx.BITMAP_TYPE_ANY).Scale(60,60)
+            imgServer = wx.Bitmap(imgServer)
+            self.btnServer2 = wx.BitmapButton(self.mainPanel, -1, imgServer, (20,130),(60,60))
+            self.btnServer2.Bind(wx.EVT_BUTTON, self.stopServer)
+        
+            self.Refresh()
+
+    # HANDLES A SINGLE CLIENT CONNECTION
+    def handle_client(self,client): 
+        while not self.quitting:
+            msg = client.recv(1024)
+            msg = msg.decode()
+
+            silent = 0
+
+            # CASE: NEW CLIENT CONNECTS
+            if "@@connected"  in msg and " -> " not in msg:
+                name = msg.split("@@connected ")[1]
+                self.clients[client] = name
                 receiver = "Global"
-                data = name + " has joined Zirk chat"
-            
-            
-            elif " -> " in data:
-                name = data.split(" -> ")[0]
-                receiver = data.split(" -> ")[1].split(": ")[0]
-            
-            if addr not in self.clients:
-                self.clients.append(addr)
+                msg = name + " has joined Zirk chat"
+            # CASE: NEW CLIENT WANTS TO INITIALIZE LIST OF ACTIVE USERS
+            elif "@@initlist " in msg and " -> " not in msg:
+                name = msg.split("@@initlist ")[1]
+                receiver = name
+                msg = "@@initlist "
+            # CASE: CLIENT SENDS FILE
+            elif "sendfile@@" in msg:
+                name = msg.split(" -> ")[0]
+                receiver = msg.split(":")[0].split(" -> ")[1]
+                filename = msg.split("@@")[1]
+                filesize = msg.split("@@")[2]
+
+                # SENDS INITIAL MSG TO RECEIVERS TO PREPARE FOR FILE DOWNLOAD
+                msg = "sendfile@@"+filename+"@@"+filesize
+                self.broadcast(msg, name, receiver)
+
+                # TURNS IS HOW MANY PACKETS NEED TO BE RECEIVED
+                turns = (int(filesize)/1024) + 1
+                turns = int(turns)
+                count = 0
                 
-            #added code
-            if addr not in self.names:
-                self.names[addr] = name
-            
-            if "@@disconnected" in data and " -> " not in data:
-                name = data.split("@@disconnected ")[1]
+                # SERVER MAKES OWN COPY OF FILE BEFORE SENDING PACKETS TO RECEIVERS
+                # WRITE SERVER COPY OF FILE
+                f = open("SERVER-COPY_"+filename, 'wb')
+                toWrite = client.recv(1024)
+                    
+                while count<turns:
+                    count+=1
+                    print("[+] Server is downloading file from client")
+                    f.write(toWrite)
+                    toWrite = client.recv(1024)
+                    
+                print("[-] File downloaded from client to server, file closed")
+                f.close()
+                print("[-] File closed, commencing sening to recipients")
+
+                # SERVER NOW SENDS FILE TO RECEIVERS BY READING AND SENDING PER KILOBYTE
+                with open("SERVER-COPY_"+filename, 'rb') as file:
+                    bytesToSend = file.read(1024)
+                    while bytesToSend:
+                        if receiver == "Global":
+                            for client in self.clients:
+                                client.send(bytesToSend)
+                        else:
+                            for client in self.clients:
+                                if (self.clients[client] == receiver or self.clients[client] == name):
+                                    client.send(msg.encode())
+
+                        bytesToSend = file.read(1024)
+
+                print("[-] Server done sending file to clients")
+                silent= 1
+            # CASE: NORMAL MESSAGE
+            elif " -> " in msg:
+                name = msg.split(" -> ")[0]
+                receiver = msg.split(" -> ")[1].split(": ")[0]
+
+            # UPDATE SERVER LOG
+            self.log.AppendText(time.ctime(time.time()) + str(self.addresses[client]) + ": :" + str(msg) + "\n")
+
+            # CASE: CLIENT DISCONNECTS
+            if "@@disconnected" in msg and " -> " not in msg:
+                client.close()
+                name = msg.split("@@disconnected ")[1]
                 receiver = "Global"
-                data = name + " has disconnected"
+                msg = name + " has disconnected"
                 for client in self.clients:
-                    if (self.names[client] == name):
-                        del self.names[client]
-                        self.aliases.remove(name)
-                        self.clients.remove(client)
+                    if (self.clients[client] == name):
+                        del self.clients[client]
+                        del self.addresses[client]
+                        break
+                self.broadcast(msg, name, receiver)
+                break
+
+            if not silent:
+                self.broadcast(msg, name, receiver)
+
+    # FUNCTION TO HANDLE PROPER SENDING OF MSG TO APPROPRIATE RECEIVERS
+    def broadcast(self, msg, name, receiver):
+        print("SENDER: " + name)
+        print("RECEIVER: " + receiver)
+
+        if receiver == "Global":
+            for client in self.clients:
+                client.send(msg.encode())
+                print("MSG SENT FROM SERVER TO GLOBAL")
+        else:
+            if "@@initlist " in msg and " -> " not in msg:
+                for client in self.clients:
+                    if (self.clients[client] == receiver or self.clients[client] == name):
+                        for i in self.clients:
+                            client.send((msg + self.clients[i]).encode())
+                            print(str(msg) + " SENT FROM SERVER")
+                            time.sleep(.1)
                         break
             else:
-                if name not in self.aliases:
-                    self.aliases.append(name)
-            
-            self.log.AppendText(time.ctime(time.time()) + str(addr) + ": :" + str(data) + "\n")
-            print(name)
-            print(receiver)
-            # SENDS TO EVERYONE
-            if (receiver == "Global"):
                 for client in self.clients:
-                    self.s.sendto(data.encode('utf-8'), client)
-                    print(str(data) + " SENT")
-            else:
-                for client in self.clients:
-                    if (self.names[client] == receiver or self.names[client] == name):
-                        self.s.sendto(data.encode('utf-8'), client)
-                        print(str(data) + " SENT")
-        except:
-            pass
-        finally:
-            self.tlock.release()
-        self.Refresh()
+                    if (self.clients[client] == receiver or self.clients[client] == name):
+                        client.send(msg.encode())
+                        print(str(msg) + " SENT FROM SERVER")
+        
+        
+    # THREAD TO LISTEN TO INCOMING CONNECTIONS
+    def listening(self):
+        while not self.quitting:
+            client_address, port = self.s.accept()
+            self.addresses[client_address] = port
+            Thread(target=self.handle_client, args=(client_address,)).start()
 
     def stopServer(self,e):
         # HIDES AND SHOWS APPROPRIATE BUTTONS
@@ -277,9 +264,6 @@ class serverFrame(wx.Frame):
         self.log.SetBackgroundColour((255,255,255))
         self.log.AppendText("SERVER TERMINATING...\n")
         self.Refresh()
-
-    def getAliases(self):
-        return self.aliases
 
 def main():
     app = wx.App()

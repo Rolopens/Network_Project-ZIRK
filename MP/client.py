@@ -4,6 +4,7 @@ import socket
 import time
 import csv
 import threading
+import os
 
 class clientFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -42,7 +43,7 @@ class clientFrame(wx.Frame):
         
         # INITIALIZE LIST BOX
         self.chatOptions = ["Global"]
-        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB)
         self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
         self.list.SetSelection(0)
 
@@ -56,8 +57,6 @@ class clientFrame(wx.Frame):
         self._logAll = "USER LOG:    " + self.userName + "\n"
         self.log.SetValue(self.defaultLog)
         self.SetTitle("Welcome, " + self.userName)
-
-
     
     def connect(self):
         self.tlock = threading.Lock()
@@ -69,24 +68,25 @@ class clientFrame(wx.Frame):
         portBox = wx.TextEntryDialog(None, "Input port number of desired server", "Server Selection", '')
         if portBox.ShowModal() == wx.ID_OK:
             self.serverPort = int(portBox.GetValue())
-        self.server = ('127.0.0.1', self.serverPort)
+        self.server = (self.host, self.serverPort)
 
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # DGRAM is used for UDP
-        self.s.bind((self.host, self.port))
-        self.s.setblocking(0)
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.connect(self.server)
+        print("CONNECTED TO SERVER")
 
-        # STARTS THREAD 1
-        self.rT = threading.Thread(target=self.receiving, args=("RecvThread", self.s))
+        # STARTS RECEIVING THREAD
+        self.rT = threading.Thread(target=self.receiving)
         self.rT.start()
 
-        # TIMER THREAD
-        #self.receiving2()
+        # SENDS INITIAL CONNECTION MESSAGE TO SERVER
         self.alias = self.userName
-        self.s.sendto(("@@connected " + self.alias).encode('utf-8'), self.server)
+        self.s.send(("@@connected " + self.alias).encode('utf-8'))
+        time.sleep(.1)
 
     def initList(self):
-        self.s.sendto(("@@initlist " + self.alias).encode('utf-8'), self.server)
+        # SENDS REQUEST TO SERVER TO INITIALIZE LIST WITH ONLINE USERS
+        self.s.send(("@@initlist " + self.alias).encode('utf-8'))
+        time.sleep(.1)
         
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
@@ -96,56 +96,107 @@ class clientFrame(wx.Frame):
         self.chatBox.SetValue("")
         self.Refresh()
 
+        sender = self.alias
+        receiver =  self.list.GetString(self.list.GetSelection())
+
         if message != '':
             try:
-                self.s.sendto((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": " + message).encode('utf-8'), self.server)
-                #self.log.AppendText(self.alias + "-> " + message + "\n")
+                self.s.send((sender + " -> " + receiver + ": " + message).encode())
             except:
                 pass
         
         self.tlock.release()
-        time.sleep(.2)
+        time.sleep(.1)
 
     def sendFile(self, e):
-        print("SENDING FILE...")
+        filename = self.fileBox.GetPath()
 
-    def receiving(self,name, sock):
+        # SENDS FILE OVER SOCKET IF FILE PICKER IS NOT EMPTY
+        if filename != "":
+
+            '''WINDOWS USERS!'''
+            #file = filename.split("\\")[len(filename.split("\\"))-1]
+
+            '''MAC USERS!'''
+            file = filename.split("/")[len(filename.split("/"))-1]
+
+            filesize = os.path.getsize(filename)
+            print(file)
+            message = "sendfile@@"+file+"@@"+str(filesize)
+
+            # SENDS FILE NAME AND SIZE TO PREPARE FOR FILE TRANSFER
+            self.s.send((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": " + message).encode('utf-8'))
+            
+            # ACTUAL FILE SENDING, READS FROM FILE AND SENDS PER KILOBYTE
+            with open(filename, 'rb') as f:
+                bytesToSend = f.read(1024)
+                while bytesToSend:
+                    print("[+] Sending from client to server")
+                    self.s.send(bytesToSend)
+                    bytesToSend = f.read(1024)
+            
+            self.log.AppendText(self.alias + ": Done sending " + file + "\n")
+            self.fileBox.SetPath("")
+            self.s.send((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": @@fileDONE@@").encode())
+
+    def receiving(self):
         # CLIENT THREAD
-        while not self.shutdown:
+        while True:
             try:
-                self.tlock.acquire()
+                data = self.s.recv(1024)
+                data = str(data.decode())
 
-                while True:
-                    data, addr = sock.recvfrom(1024)
-                    data = str(data.decode())
+                silent = 0
+                if " -> " not in data and "joined Zirk chat" in data:
+                    name = data.split(" has")[0]
+                    if name not in self.chatOptions:
+                        self.list.Append(name)
+                        self.chatOptions.append(name)
+                elif " -> " not in data and "disconnected" in data:
+                    name = data.split(" has ")[0]
+                    self.deleteInList(name)
+                    self.chatOptions.remove(name)
+                elif " -> " not in data and "@@initlist " in data:
+                    silent = 1
+                    name = data.split(" ")[1]
+                    if name not in self.chatOptions:
+                        self.list.Append(name)
+                        self.chatOptions.append(name)
+                elif " -> " not in data and "sendfile@@" in data:
+                    self.filename = data.split("@@")[1]
+                    self.filesize = float(data.split("@@")[2])
 
-                    silent = 0
-                    if " -> " not in data and "joined Zirk chat" in data:
-                        name = data.split(" has")[0]
-                        if name not in self.chatOptions:
-                            self.list.Append(name)
-                            self.chatOptions.append(name)
-                    elif " -> " not in data and "disconnected" in data:
-                        name = data.split(" has ")[0]
-                        self.deleteInList(name)
-                        self.chatOptions.remove(name)
-                    elif " -> " not in data and "@@initlist " in data:
-                        silent = 1
-                        name = data.split(" ")[1]
-                        if name not in self.chatOptions:
-                            self.list.Append(name)
-                            self.chatOptions.append(name)
+                    # TURNS IS HOW MANY PACKETS NEED TO BE RECEIVED
+                    turns = (int(self.filesize)/1024) + 1
+                    turns = int(turns)
+                    count = 0
+                    totalRecv = 0
 
-                    if not silent:
-                        self._logAll += str(data) + "\n"
-                        self.log.AppendText(str(data) + "\n")
-                    print(str(data) + " RECEIVED")
+                    # DOWNLOADS FILE, ADDS PREFIX TO IDENTIFY RECEIVER
+                    f = open("sentTo"+self.alias+"_"+self.filename, 'wb')
+
+                    # KEEPS DOWNLOADING FILE UNTIL ALL PACKETS ARE RECEIVED
+                    while count<turns:
+                        toWrite = self.s.recv(1024)
+
+                        print("[+] Downloading file from server")
+                        f.write(toWrite)
+
+                        totalRecv += len(toWrite)
+                        print("{0:.2f}".format(totalRecv/float(self.filesize)*100) + "\%\done")
+
+                        count+=1
+
+                    # CLOSE FILE AFTER
+                    f.close()
+                    print("[+] File downloaded!")
+                    data = "Received " + self.filename + " of size " + str(self.filesize) + " bytes" 
+
+                if not silent:
+                    self._logAll += str(data) + "\n"
+                    self.log.AppendText(str(data) + "\n")
             except:
-                pass
-            finally:
-                self.tlock.release()
-            # PLAY WITH THIS
-            time.sleep(.2)
+                break
 
     def deleteInList(self, name):
         i = self.list.GetCount()
@@ -156,11 +207,10 @@ class clientFrame(wx.Frame):
         self.Refresh()
 
     def disconnect(self,e):
-        self.s.sendto(("@@disconnected " + self.alias).encode('utf-8'), self.server)
         self.shutdown = True
-        self.rT.join()
+        #self.rT.join()
+        self.s.send(("@@disconnected " + self.alias).encode())
         self.s.close()
-        self.log.AppendText("DISCONNECTED FROM SERVER\n")
         self.Close()
 
     # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
@@ -169,21 +219,17 @@ class clientFrame(wx.Frame):
         self.chatMate = self.list.GetString(self.list.GetSelection()) 
         self.filter(self.chatMate)
 
+    # FILTERS MESSAGES BY MESSAGES FROM AND TO CERTAIN PERSON
     def filter(self, name):
         ok1 = name + " -> "
         ok2 = " -> " + name
    
         lines = self._logAll.split("\n")
-        print("CUR LINES")
-        print(lines)
         for i in range(len(lines)-1,-1,-1):
             if ok1 not in lines[i] and ok2 not in lines[i]:
                 del lines[i]
             elif lines[i] == '\n':
                 del lines[i]
-
-        print("FILTERED LINES FOR " + name)
-        print(lines)
  
         self.log.SetValue(self.defaultLog)
         self.log.AppendText("Now chatting with " + name + "\n")
@@ -249,6 +295,7 @@ class client(wx.Frame):
         else:
             self.btnClient.Hide()
 
+    # INITIALIZES USERNAME AND PASSWORDS FROM EXTERNAL FILE
     def readCredentials(self,filename):
         with open(filename,"rt") as csvfile:
             cin = csv.reader(csvfile)
@@ -257,6 +304,7 @@ class client(wx.Frame):
         for entry in self.creds:
             self.userInfo[entry[0]] = entry[1].replace('\n','')
 
+    # UPDATES CREDENTIALS EXTERNAL FILE
     def writeCredentials(self,filename):
         with open(filename, 'w', newline='\n') as csvfile:
             writer = csv.writer(csvfile)
@@ -264,6 +312,7 @@ class client(wx.Frame):
                 entry=[name,password+'\n']
                 writer.writerow(entry)
 
+    # CREATES NEW ACCOUNT, UPDATES CSV
     def newAccount(self, e):
         name = self.userBox.GetValue()
         password = self.passBox.GetValue()       
@@ -278,6 +327,7 @@ class client(wx.Frame):
 
         self.addClient(name)
 
+    # CHECKS IF USER CREDENTIALS IS VALID, LOG IN IF VALID
     def login(self,e):
         curName = self.userBox.GetValue()
         curPass = self.passBox.GetValue()
