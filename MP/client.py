@@ -115,10 +115,10 @@ class clientFrame(wx.Frame):
         if filename != "":
 
             '''WINDOWS USERS!'''
-            #file = filename.split("\\")[len(filename.split("\\"))-1]
+            file = filename.split("\\")[len(filename.split("\\"))-1]
 
             '''MAC USERS!'''
-            file = filename.split("/")[len(filename.split("/"))-1]
+            #file = filename.split("/")[len(filename.split("/"))-1]
 
             filesize = os.path.getsize(filename)
             print(file)
@@ -137,7 +137,6 @@ class clientFrame(wx.Frame):
             
             self.log.AppendText(self.alias + ": Done sending " + file + "\n")
             self.fileBox.SetPath("")
-            self.s.send((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": @@fileDONE@@").encode())
 
     def receiving(self):
         # CLIENT THREAD
@@ -163,34 +162,26 @@ class clientFrame(wx.Frame):
                         self.list.Append(name)
                         self.chatOptions.append(name)
                 elif " -> " not in data and "sendfile@@" in data:
-                    self.filename = data.split("@@")[1]
-                    self.filesize = float(data.split("@@")[2])
-
-                    # TURNS IS HOW MANY PACKETS NEED TO BE RECEIVED
-                    turns = (int(self.filesize)/1024) + 1
-                    turns = int(turns)
-                    count = 0
-                    totalRecv = 0
+                    filename = data.split("@@")[1]
+                    filesize = float(data.split("@@")[2])
 
                     # DOWNLOADS FILE, ADDS PREFIX TO IDENTIFY RECEIVER
-                    f = open("sentTo"+self.alias+"_"+self.filename, 'wb')
-
+                    f = open("sentTo"+self.alias+"_"+filename, 'wb')
+                    toWrite = self.s.recv(1024)
+                    totalRecv = len(toWrite)
+                    f.write(toWrite)
+                    
                     # KEEPS DOWNLOADING FILE UNTIL ALL PACKETS ARE RECEIVED
-                    while count<turns:
+                    while totalRecv < filesize:
                         toWrite = self.s.recv(1024)
-
-                        print("[+] Downloading file from server")
-                        f.write(toWrite)
-
                         totalRecv += len(toWrite)
-                        print("{0:.2f}".format(totalRecv/float(self.filesize)*100) + "\%\done")
-
-                        count+=1
+                        f.write(toWrite)
+                        print("{0:.2f}".format((totalRecv/float(filesize)) * 100) + "percent done: CLIENT SIDE")
 
                     # CLOSE FILE AFTER
                     f.close()
-                    print("[+] File downloaded!")
-                    data = "Received " + self.filename + " of size " + str(self.filesize) + " bytes" 
+                    print("[+] File downloaded! CLIENT SIDE")
+                    data = "Received " + filename + " of size " + str(filesize) + " bytes" 
 
                 if not silent:
                     self._logAll += str(data) + "\n"

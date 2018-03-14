@@ -158,25 +158,22 @@ class serverFrame(wx.Frame):
                 msg = "sendfile@@"+filename+"@@"+filesize
                 self.broadcast(msg, name, receiver)
 
-                # TURNS IS HOW MANY PACKETS NEED TO BE RECEIVED
-                turns = (int(filesize)/1024) + 1
-                turns = int(turns)
-                count = 0
-                
                 # SERVER MAKES OWN COPY OF FILE BEFORE SENDING PACKETS TO RECEIVERS
                 # WRITE SERVER COPY OF FILE
+                filesize = float(filesize)
                 f = open("SERVER-COPY_"+filename, 'wb')
                 toWrite = client.recv(1024)
-                    
-                while count<turns:
-                    count+=1
-                    print("[+] Server is downloading file from client")
-                    f.write(toWrite)
+                totalRecv = len(toWrite)
+                f.write(toWrite)
+                while totalRecv < filesize:
                     toWrite = client.recv(1024)
-                    
+                    totalRecv += len(toWrite)
+                    f.write(toWrite)
+                    print("{0:.2f}".format((totalRecv/float(filesize)) * 100) + "percent done: SERVER SIDE")
+
                 print("[-] File downloaded from client to server, file closed")
                 f.close()
-                print("[-] File closed, commencing sening to recipients")
+                print("[-] File closed, now sending to recipients")
 
                 # SERVER NOW SENDS FILE TO RECEIVERS BY READING AND SENDING PER KILOBYTE
                 with open("SERVER-COPY_"+filename, 'rb') as file:
@@ -188,8 +185,7 @@ class serverFrame(wx.Frame):
                         else:
                             for client in self.clients:
                                 if (self.clients[client] == receiver or self.clients[client] == name):
-                                    client.send(msg.encode())
-
+                                    client.send(bytesToSend)
                         bytesToSend = file.read(1024)
 
                 print("[-] Server done sending file to clients")
