@@ -1,8 +1,73 @@
-SAMPE FILE TO SEND
-SAMPE FILE TO SEND
-SAMPE FILE TO SEND
-SAMPE FILE TO SEND
-SAMPE FILE TO SEND
-SAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SENDSAMPE FILE TO SEND
-PAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLEPAR 2 SAMPLE
-PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3PART3
+_______████████__██████
+
+_________█░░░░░░░░██_██░░░░░░█
+
+________█░░░░░░░░░░░█░░░░░░░░░█
+
+_______█░░░░░░░███░░░█░░░░░░░░░█
+
+_______█░░░░███░░░███░█░░░████░█
+
+______█░░░██░░░░░░░░███░██░░░░██
+
+_____█░░░░░░░░░░░░░░░░░█░░░░░░░░███
+
+____█░░░░░░░░░░░░░██████░░░░░████░░█
+
+____█░░░░░░░░░█████░░░████░░██░░██░░█
+
+___██░░░░░░░███░░░░░░░░░░█░░░░░░░░███
+
+__█░░░░░░░░░░░░░░█████████░░█████████
+
+█░░░░░░░░░░█████_████████_█████_█
+
+█░░░░░░░░░░█___█_████___███_█_█
+
+█░░░░░░░░░░░░█_████_████__██_██████
+
+░░░░░░░░░░░░░█████████░░░████████░░░█
+
+░░░░░░░░░░░░░░░░█░░░░░█░░░░░░░░░░░░█
+
+░░░░░░░░░░░░░░░░░░░░██░░░░█░░░░░░██
+
+░░░░░░░░░░░░░░░░░░██░░░░░░░███████
+
+░░░░░░░░░░░░░░░░██░░░░░░░░░░█░░░░░█
+
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+
+░░░░░░░░░░░█████████░░░░░░░░░░░░░░██
+
+░░░░░░░░░░█▒▒▒▒▒▒▒▒███████████████▒▒█
+
+░░░░░░░░░█▒▒███████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█
+
+░░░░░░░░░█▒▒▒▒▒▒▒▒▒█████████████████
+
+░░░░░░░░░░████████▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒█
+
+░░░░░░░░░░░░░░░░░░██████████████████
+
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░█
+
+██░░░░░░░░░░░░░░░░░░░░░░░░░░░██
+
+▓██░░░░░░░░░░░░░░░░░░░░░░░░██
+
+▓▓▓███░░░░░░░░░░░░░░░░░░░░█
+
+▓▓▓▓▓▓███░░░░░░░░░░░░░░░██
+
+▓▓▓▓▓▓▓▓▓███████████████▓▓█
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓██
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█
+
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓█

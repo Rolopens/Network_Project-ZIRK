@@ -6,6 +6,222 @@ import csv
 import threading
 import os
 
+class chatroomFrame(wx.Frame):
+    def __init__(self, *args, **kwargs):
+        style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
+        super(chatroomFrame, self).__init__(*args, **kwargs, style = style)
+        self.initialize()
+    def initialize(self):
+        # ~AESTHETICS~
+        self.SetSize(380,400)
+        self.mainPanel = wx.Panel(self)
+        self.SetBackgroundColour("WHITE")
+        
+        # ADD HEADER PHOTO
+        imgHeader = wx.Image("rsrcs/chatroomheader.jpg", wx.BITMAP_TYPE_ANY).Scale(315,130)
+        imgHeader = wx.Bitmap(imgHeader)
+        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (60,0), (315,130))
+
+        # ADD DISCONNECT BUTTON
+        imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Bitmap(imgServer)
+        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (10,100),(30,30))
+        self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
+
+        # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
+        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
+
+        # INITIALIZE CHATBOX
+        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
+        self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
+
+        # INITIALIZE FILE SELECTOR
+        self.fileBox = wx.FilePickerCtrl(self.mainPanel, style = wx.FLP_USE_TEXTCTRL | wx.FLP_FILE_MUST_EXIST, pos=(80,325))
+        self.sendFileBtn = wx.Button(self.mainPanel, label="Send File", pos=(280,328), size=(100,25))
+        self.sendFileBtn.Bind(wx.EVT_BUTTON, self.sendFile)
+        
+        '''
+        # INITIALIZE LIST BOX
+        self.chatOptions = ["Global"]
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
+        self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
+        self.list.SetSelection(0)
+        self.chatMate = "Global"
+        '''
+
+        self.SetPosition((300,200))
+        self.Show()
+
+    def sendMsg(self,e):
+        # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
+        self.tlock.acquire()
+        message = self.chatBox.GetValue()
+
+        self.chatBox.SetValue("")
+        self.Refresh()
+
+        sender = self.alias
+        #receiver =  self.chatMate
+
+        if type(receiver) is str:
+            if message != '':
+                try:
+                    self.s.send((sender + " -> " + receiver + ": " + message).encode())
+                except:
+                    pass
+        elif type(receiver) is list:
+            self.log.AppendText("ERROR: MORE THAN ONE PERSON SELECTED")
+        
+        self.tlock.release()
+        time.sleep(.1)
+
+    def sendFile(self, e):
+        filename = self.fileBox.GetPath()
+        sender = self.alias
+        #receiver =  self.chatMate
+
+        # SENDS FILE OVER SOCKET IF FILE PICKER IS NOT EMPTY
+        if filename != "":
+
+            '''WINDOWS USERS!'''
+            #file = filename.split("\\")[len(filename.split("\\"))-1]
+
+            '''MAC USERS!'''
+            file = filename.split("/")[len(filename.split("/"))-1]
+
+            filesize = os.path.getsize(filename)
+            print(file)
+            message = "sendfile@@"+file+"@@"+str(filesize)
+
+            # SENDS FILE NAME AND SIZE TO PREPARE FOR FILE TRANSFER
+            self.s.send((sender + " -> " + receiver + ": " + message).encode('utf-8'))
+            
+            # ACTUAL FILE SENDING, READS FROM FILE AND SENDS PER KILOBYTE
+            with open(filename, 'rb') as f:
+                bytesToSend = f.read(1024)
+                while bytesToSend:
+                    print("[+] Sending from client to server")
+                    self.s.send(bytesToSend)
+                    bytesToSend = f.read(1024)
+            
+            self.log.AppendText(self.alias + ": Done sending " + file + "\n")
+            self.fileBox.SetPath("")
+
+    def disconnect(self,e):
+        self.shutdown = True
+        #self.rT.join()
+        self.s.send(("@@disconnected " + self.alias).encode())
+        self.s.close()
+        self.Close()
+
+class grpchatFrame(wx.Frame):
+    def __init__(self, *args, **kwargs):
+        style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
+        super(grpchatFrame, self).__init__(*args, **kwargs, style = style)
+        self.initialize()
+    def initialize(self):
+        # ~AESTHETICS~
+        self.SetSize(380,400)
+        self.mainPanel = wx.Panel(self)
+        self.SetBackgroundColour("WHITE")
+        
+        # ADD HEADER PHOTO
+        imgHeader = wx.Image("rsrcs/grpheader.jpg", wx.BITMAP_TYPE_ANY).Scale(315,130)
+        imgHeader = wx.Bitmap(imgHeader)
+        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (60,0), (315,130))
+
+        # ADD DISCONNECT BUTTON
+        imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
+        imgServer = wx.Bitmap(imgServer)
+        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (10,100),(30,30))
+        self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
+
+        # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
+        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
+
+        # INITIALIZE CHATBOX
+        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
+        self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
+
+        # INITIALIZE FILE SELECTOR
+        self.fileBox = wx.FilePickerCtrl(self.mainPanel, style = wx.FLP_USE_TEXTCTRL | wx.FLP_FILE_MUST_EXIST, pos=(80,325))
+        self.sendFileBtn = wx.Button(self.mainPanel, label="Send File", pos=(280,328), size=(100,25))
+        self.sendFileBtn.Bind(wx.EVT_BUTTON, self.sendFile)
+        
+        '''
+        # INITIALIZE LIST BOX
+        self.chatOptions = ["Global"]
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
+        self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
+        self.list.SetSelection(0)
+        self.chatMate = "Global"
+        '''
+
+        self.SetPosition((300,200))
+        self.Show()
+
+    def sendMsg(self,e):
+        # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
+        self.tlock.acquire()
+        message = self.chatBox.GetValue()
+
+        self.chatBox.SetValue("")
+        self.Refresh()
+
+        sender = self.alias
+        #receiver =  self.chatMate
+
+        if type(receiver) is str:
+            if message != '':
+                try:
+                    self.s.send((sender + " -> " + receiver + ": " + message).encode())
+                except:
+                    pass
+        elif type(receiver) is list:
+            self.log.AppendText("ERROR: MORE THAN ONE PERSON SELECTED")
+        
+        self.tlock.release()
+        time.sleep(.1)
+
+    def sendFile(self, e):
+        filename = self.fileBox.GetPath()
+        sender = self.alias
+        #receiver =  self.chatMate
+
+        # SENDS FILE OVER SOCKET IF FILE PICKER IS NOT EMPTY
+        if filename != "":
+
+            '''WINDOWS USERS!'''
+            #file = filename.split("\\")[len(filename.split("\\"))-1]
+
+            '''MAC USERS!'''
+            file = filename.split("/")[len(filename.split("/"))-1]
+
+            filesize = os.path.getsize(filename)
+            print(file)
+            message = "sendfile@@"+file+"@@"+str(filesize)
+
+            # SENDS FILE NAME AND SIZE TO PREPARE FOR FILE TRANSFER
+            self.s.send((sender + " -> " + receiver + ": " + message).encode('utf-8'))
+            
+            # ACTUAL FILE SENDING, READS FROM FILE AND SENDS PER KILOBYTE
+            with open(filename, 'rb') as f:
+                bytesToSend = f.read(1024)
+                while bytesToSend:
+                    print("[+] Sending from client to server")
+                    self.s.send(bytesToSend)
+                    bytesToSend = f.read(1024)
+            
+            self.log.AppendText(self.alias + ": Done sending " + file + "\n")
+            self.fileBox.SetPath("")
+
+    def disconnect(self,e):
+        self.shutdown = True
+        #self.rT.join()
+        self.s.send(("@@disconnected " + self.alias).encode())
+        self.s.close()
+        self.Close()
+
 class clientFrame(wx.Frame):
     def __init__(self, *args, **kwargs):
         style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
@@ -43,9 +259,24 @@ class clientFrame(wx.Frame):
         
         # INITIALIZE LIST BOX
         self.chatOptions = ["Global"]
-        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB)
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
         self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
         self.list.SetSelection(0)
+        self.chatMate = "Global"
+
+        # ADD GROUP CHAT BUTTON
+        imgServer = wx.Image("rsrcs/grpchat.jpg", wx.BITMAP_TYPE_ANY).Scale(25,25)
+        imgServer = wx.Bitmap(imgServer)
+        self.btnGrpchat = wx.BitmapButton(self.mainPanel, -1, imgServer, (430,100),(30,30))
+        self.btnGrpchat.Bind(wx.EVT_BUTTON, self.createGroupChat)
+        self.btnGrpchat.Hide()
+
+        # ADD CHATROOM BUTTON
+        imgServer = wx.Image("rsrcs/chatroom.jpg", wx.BITMAP_TYPE_ANY).Scale(25,25)
+        imgServer = wx.Bitmap(imgServer)
+        self.btnChatroom = wx.BitmapButton(self.mainPanel, -1, imgServer, (460,100),(30,30))
+        self.btnChatroom.Bind(wx.EVT_BUTTON, self.createChatroom)
+        self.btnChatroom.Hide()
 
         self.SetPosition((300,200))
         self.Show()
@@ -57,6 +288,12 @@ class clientFrame(wx.Frame):
         self._logAll = "USER LOG:    " + self.userName + "\n"
         self.log.SetValue(self.defaultLog)
         self.SetTitle("Welcome, " + self.userName)
+
+    def createGroupChat(self, e):
+        print("MAKING GROUP CHAT")
+
+    def createChatroom(self, e):
+        print("MAKING CHATROOM")
     
     def connect(self):
         self.tlock = threading.Lock()
@@ -87,6 +324,31 @@ class clientFrame(wx.Frame):
         # SENDS REQUEST TO SERVER TO INITIALIZE LIST WITH ONLINE USERS
         self.s.send(("@@initlist " + self.alias).encode('utf-8'))
         time.sleep(.1)
+
+    def getReceivers(self):
+        chosen = self.list.GetSelections()
+        if len(chosen) == 1:
+            return self.list.GetString(chosen[0])
+        else:
+            names = []
+            for i in chosen:
+                names.append(self.list.GetString(i))
+            return names
+
+    # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
+    def updateChat (self, e):
+        selected = self.list.GetSelections()
+        self.chatMate = self.getReceivers()
+        if type(self.chatMate) is str:
+            self.filter(self.chatMate)
+            self.btnChatroom.Hide()
+            self.btnGrpchat.Hide()
+        elif type(self.chatMate) is list and "Global" not in self.chatMate:
+            self.btnChatroom.Show()
+            self.btnGrpchat.Show()
+        elif "Global" in self.chatMate:
+            self.btnChatroom.Hide()
+            self.btnGrpchat.Hide()
         
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
@@ -97,35 +359,40 @@ class clientFrame(wx.Frame):
         self.Refresh()
 
         sender = self.alias
-        receiver =  self.list.GetString(self.list.GetSelection())
+        receiver =  self.chatMate
 
-        if message != '':
-            try:
-                self.s.send((sender + " -> " + receiver + ": " + message).encode())
-            except:
-                pass
+        if type(receiver) is str:
+            if message != '':
+                try:
+                    self.s.send((sender + " -> " + receiver + ": " + message).encode())
+                except:
+                    pass
+        elif type(receiver) is list:
+            self.log.AppendText("ERROR: MORE THAN ONE PERSON SELECTED")
         
         self.tlock.release()
         time.sleep(.1)
 
     def sendFile(self, e):
         filename = self.fileBox.GetPath()
+        sender = self.alias
+        receiver =  self.chatMate
 
         # SENDS FILE OVER SOCKET IF FILE PICKER IS NOT EMPTY
         if filename != "":
 
             '''WINDOWS USERS!'''
-            file = filename.split("\\")[len(filename.split("\\"))-1]
+            #file = filename.split("\\")[len(filename.split("\\"))-1]
 
             '''MAC USERS!'''
-            #file = filename.split("/")[len(filename.split("/"))-1]
+            file = filename.split("/")[len(filename.split("/"))-1]
 
             filesize = os.path.getsize(filename)
             print(file)
             message = "sendfile@@"+file+"@@"+str(filesize)
 
             # SENDS FILE NAME AND SIZE TO PREPARE FOR FILE TRANSFER
-            self.s.send((self.alias + " -> " + self.list.GetString(self.list.GetSelection()) + ": " + message).encode('utf-8'))
+            self.s.send((sender + " -> " + receiver + ": " + message).encode('utf-8'))
             
             # ACTUAL FILE SENDING, READS FROM FILE AND SENDS PER KILOBYTE
             with open(filename, 'rb') as f:
@@ -203,12 +470,6 @@ class clientFrame(wx.Frame):
         self.s.send(("@@disconnected " + self.alias).encode())
         self.s.close()
         self.Close()
-
-    # IF USER SELECTS NEW CHAT OPTION IN COMBOBOX, UPDATE LOG AND DO SOME OTHER STUFF
-    def updateChat (self, e):
-        selected = self.list.GetSelections()
-        self.chatMate = self.list.GetString(self.list.GetSelection()) 
-        self.filter(self.chatMate)
 
     # FILTERS MESSAGES BY MESSAGES FROM AND TO CERTAIN PERSON
     def filter(self, name):
