@@ -93,6 +93,8 @@ class serverFrame(wx.Frame):
         # MAPS ADDRESS TO PORT
         self.addresses={}
 
+        self.chatRooms = {}
+
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         success= False
@@ -190,6 +192,7 @@ class serverFrame(wx.Frame):
 
                 print("[-] Server done sending file to clients")
                 silent= 1
+            
             # CASE: NORMAL MESSAGE
             elif " -> " in msg:
                 name = msg.split(" -> ")[0]
@@ -214,6 +217,25 @@ class serverFrame(wx.Frame):
 
             if not silent:
                 self.broadcast(msg, name, receiver)
+
+            # CASE: CREATING CHAT ROOM (the one with password
+            if "@@addCR@@" in msg and "->" not in msg:
+                error = False
+                owner = msg.split("@@")[0]
+                
+                groupname = msg.split("@@")[2]
+                grouppass = msg.split("@@")[3]
+                for x in self.chatRooms.keys():
+                    if x is groupname:
+                        error = True
+                if error is True:
+                    #still not sure about this part - rolo
+                    self.broadcast("ERROR", owner, owner)
+                else:
+                    self.chatRooms[groupname] = [grouppass, []]
+                print(self.chatRooms[groupname][0])
+                    
+                
 
     # FUNCTION TO HANDLE PROPER SENDING OF MSG TO APPROPRIATE RECEIVERS
     def broadcast(self, msg, name, receiver):
