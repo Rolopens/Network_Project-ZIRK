@@ -85,8 +85,8 @@ class serverFrame(wx.Frame):
             if portBox.ShowModal() == wx.ID_OK:
                 self.port = int(portBox.GetValue())
 
-        # SERVER SHIT
-        self.host = '127.0.0.1'
+        # SERVER
+        self.host = '192.168.0.1'
 
         # MAPS ADDRESS TO NAME
         self.clients={}
