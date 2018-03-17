@@ -287,6 +287,16 @@ class clientFrame(wx.Frame):
 
     def createChatroom(self, e):
         print("MAKING CHATROOM")
+        username = ""
+        password = ""
+        nameBox = wx.TextEntryDialog(None, "Enter Name of Group Chat", "Name", '')
+        if nameBox.ShowModal() == wx.ID_OK:
+            username = nameBox.GetValue()
+        passBox = wx.TextEntryDialog(None, "Enter password of Group Chat", "Password", '')
+        if passBox.ShowModal() == wx.ID_OK:
+            password = passBox.GetValue()
+        print(self.alias + "@@addCR@@"+ username + "@@" + password)
+        self.s.send((self.alias + "@@addCR@@"+ username + "@@" + password).encode())
     
     def connect(self):
         self.tlock = threading.Lock()
@@ -441,7 +451,10 @@ class clientFrame(wx.Frame):
                     # CLOSE FILE AFTER
                     f.close()
                     print("[+] File downloaded! CLIENT SIDE")
-                    data = "Received " + filename + " of size " + str(filesize) + " bytes" 
+                    data = "Received " + filename + " of size " + str(filesize) + " bytes"
+                elif " -> " not in data and "@@addCR" in data:
+                    silent = 1
+                    
 
                 if not silent:
                     self._logAll += str(data) + "\n"
