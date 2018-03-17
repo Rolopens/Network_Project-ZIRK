@@ -86,7 +86,7 @@ class serverFrame(wx.Frame):
                 self.port = int(portBox.GetValue())
 
         # SERVER
-        self.host = '192.168.0.1'
+        self.host = '127.0.0.1'
 
         # MAPS ADDRESS TO NAME
         self.clients={}

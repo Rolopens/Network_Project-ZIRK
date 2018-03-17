@@ -292,7 +292,7 @@ class clientFrame(wx.Frame):
         self.tlock = threading.Lock()
         self.shutdown = False
 
-        self.host = '192.168.0.1'
+        self.host = '127.0.0.1'
         self.port = 0
 
         portBox = wx.TextEntryDialog(None, "Input port number of desired server", "Server Selection", '')
