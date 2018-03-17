@@ -13,7 +13,7 @@ class chatroomFrame(wx.Frame):
         self.initialize()
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(380,400)
+        self.SetSize(535,400)
         self.mainPanel = wx.Panel(self)
         self.SetBackgroundColour("WHITE")
         
@@ -40,14 +40,11 @@ class chatroomFrame(wx.Frame):
         self.sendFileBtn = wx.Button(self.mainPanel, label="Send File", pos=(280,328), size=(100,25))
         self.sendFileBtn.Bind(wx.EVT_BUTTON, self.sendFile)
         
-        '''
         # INITIALIZE LIST BOX
-        self.chatOptions = ["Global"]
-        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195), style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
         self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
         self.list.SetSelection(0)
         self.chatMate = "Global"
-        '''
 
         self.SetPosition((300,200))
         self.Show()
@@ -121,7 +118,7 @@ class grpchatFrame(wx.Frame):
         self.initialize()
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(380,400)
+        self.SetSize(535,400)
         self.mainPanel = wx.Panel(self)
         self.SetBackgroundColour("WHITE")
         
@@ -148,14 +145,10 @@ class grpchatFrame(wx.Frame):
         self.sendFileBtn = wx.Button(self.mainPanel, label="Send File", pos=(280,328), size=(100,25))
         self.sendFileBtn.Bind(wx.EVT_BUTTON, self.sendFile)
         
-        '''
         # INITIALIZE LIST BOX
-        self.chatOptions = ["Global"]
-        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
+        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195), style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
         self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
         self.list.SetSelection(0)
-        self.chatMate = "Global"
-        '''
 
         self.SetPosition((300,200))
         self.Show()
