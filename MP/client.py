@@ -4,6 +4,7 @@ import socket
 import time
 import csv
 import threading
+from threading import Thread
 import os
 
 class chatroomFrame(wx.Frame):
@@ -111,48 +112,87 @@ class chatroomFrame(wx.Frame):
         self.s.close()
         self.Close()
 
-class grpchatFrame(wx.Frame):
-    def __init__(self, *args, **kwargs):
-        style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
-        super(grpchatFrame, self).__init__(*args, **kwargs, style = style)
+class grpChatTab(wx.Panel):
+    def __init__(self, parent, title):
+        wx.Panel.__init__(self, parent)
+        self.title = title
+        self.MAINFRAME = parent
         self.initialize()
+
     def initialize(self):
         # ~AESTHETICS~
-        self.SetSize(535,400)
-        self.mainPanel = wx.Panel(self)
+        #self.SetSize(535,400)
         self.SetBackgroundColour("WHITE")
         
         # ADD HEADER PHOTO
         imgHeader = wx.Image("rsrcs/grpheader.jpg", wx.BITMAP_TYPE_ANY).Scale(315,130)
         imgHeader = wx.Bitmap(imgHeader)
-        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (60,0), (315,130))
+        self.header = wx.StaticBitmap(self, -1, imgHeader, (90,0), (315,130))
 
         # ADD DISCONNECT BUTTON
         imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (10,100),(30,30))
+        self.btnDisconnect = wx.BitmapButton(self, -1, imgServer, (490,100),(30,30))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
-        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
+        self.log = wx.TextCtrl(self, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
 
         # INITIALIZE CHATBOX
-        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
+        self.chatBox = wx.TextCtrl(self, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
         # INITIALIZE FILE SELECTOR
-        self.fileBox = wx.FilePickerCtrl(self.mainPanel, style = wx.FLP_USE_TEXTCTRL | wx.FLP_FILE_MUST_EXIST, pos=(80,325))
-        self.sendFileBtn = wx.Button(self.mainPanel, label="Send File", pos=(280,328), size=(100,25))
+        self.fileBox = wx.FilePickerCtrl(self, style = wx.FLP_USE_TEXTCTRL | wx.FLP_FILE_MUST_EXIST, pos=(80,325))
+        self.sendFileBtn = wx.Button(self, label="Send File", pos=(280,328), size=(100,25))
         self.sendFileBtn.Bind(wx.EVT_BUTTON, self.sendFile)
         
         # INITIALIZE LIST BOX
-        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195), style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
-        self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
-        self.list.SetSelection(0)
+        self.list = wx.ListBox(self,pos=(380,130),size = (145,195), style = wx.LB_NEEDED_SB)
+        #self.list.SetSelection(0)
+        #self.chatMate = "Global"
 
-        self.SetPosition((300,200))
-        self.Show()
+    def setAlias(self, name):
+        # SETS ALIAS AND OTHER AESTHETIC STUFF
+        self.userName = name
+        self.defaultLog = "USER LOG:    " + self.userName + "\n"
+        self._logAll = "USER LOG:    " + self.userName + "\n"
+        self.log.SetValue(self.defaultLog)
+    
+    def connect(self, portNo, groupName, alias):
+        self.tlock = threading.Lock()
+        self.shutdown = False
 
+        self.host = '127.0.0.1'
+        self.port = 0
+
+        self.serverPort = portNo
+        self.server = (self.host, self.serverPort)
+
+        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.s.connect(self.server)
+        print("CONNECTED TO SERVER")
+
+        # STARTS RECEIVING THREAD
+        self.rT = threading.Thread(target=self.receiving)
+        self.rT.start()
+
+        # SENDS INITIAL CONNECTION MESSAGE TO SERVER
+        '''
+        self.alias = self.userName
+        self.s.send(("@@connected " + self.alias).encode('utf-8'))
+        '''
+
+        self.alias = alias
+        self.chatMate = groupName
+        time.sleep(.1)
+
+
+    def initList(self):
+        # SENDS REQUEST TO SERVER TO INITIALIZE LIST WITH ONLINE USERS
+        self.s.send(("@@initlist " + self.alias).encode('utf-8'))
+        time.sleep(.1)
+        
     def sendMsg(self,e):
         # GETS MESSAGE FROM CHATBOX, SENDS IT OVER SOCKET IF NOT EMPTY
         self.tlock.acquire()
@@ -162,7 +202,7 @@ class grpchatFrame(wx.Frame):
         self.Refresh()
 
         sender = self.alias
-        #receiver =  self.chatMate
+        receiver =  self.chatMate
 
         if type(receiver) is str:
             if message != '':
@@ -179,16 +219,16 @@ class grpchatFrame(wx.Frame):
     def sendFile(self, e):
         filename = self.fileBox.GetPath()
         sender = self.alias
-        #receiver =  self.chatMate
+        receiver =  self.chatMate
 
         # SENDS FILE OVER SOCKET IF FILE PICKER IS NOT EMPTY
         if filename != "":
 
             '''WINDOWS USERS!'''
-            #file = filename.split("\\")[len(filename.split("\\"))-1]
+            file = filename.split("\\")[len(filename.split("\\"))-1]
 
             '''MAC USERS!'''
-            file = filename.split("/")[len(filename.split("/"))-1]
+            #file = filename.split("/")[len(filename.split("/"))-1]
 
             filesize = os.path.getsize(filename)
             print(file)
@@ -208,51 +248,130 @@ class grpchatFrame(wx.Frame):
             self.log.AppendText(self.alias + ": Done sending " + file + "\n")
             self.fileBox.SetPath("")
 
+    def receiving(self):
+        # CLIENT THREAD
+        while True:
+            try:
+                data = self.s.recv(1024)
+                data = str(data.decode())
+
+                silent = 0
+                if " -> " not in data and "joined Zirk chat" in data:
+                    name = data.split(" has")[0]
+                    if name not in self.chatOptions:
+                        self.list.Append(name)
+                        self.chatOptions.append(name)
+                elif " -> " not in data and "disconnected" in data:
+                    name = data.split(" has ")[0]
+                    self.deleteInList(name)
+                    self.chatOptions.remove(name)
+                elif " -> " not in data and "@@initlist " in data:
+                    silent = 1
+                    name = data.split(" ")[1]
+                    if name not in self.chatOptions:
+                        self.list.Append(name)
+                        self.chatOptions.append(name)
+                elif " -> " not in data and "sendfile@@" in data:
+                    filename = data.split("@@")[1]
+                    filesize = float(data.split("@@")[2])
+
+                    # DOWNLOADS FILE, ADDS PREFIX TO IDENTIFY RECEIVER
+                    f = open("sentTo"+self.alias+"_"+filename, 'wb')
+                    toWrite = self.s.recv(1024)
+                    totalRecv = len(toWrite)
+                    f.write(toWrite)
+                    
+                    # KEEPS DOWNLOADING FILE UNTIL ALL PACKETS ARE RECEIVED
+                    while totalRecv < filesize:
+                        toWrite = self.s.recv(1024)
+                        totalRecv += len(toWrite)
+                        f.write(toWrite)
+                        print("{0:.2f}".format((totalRecv/float(filesize)) * 100) + "percent done: CLIENT SIDE")
+
+                    # CLOSE FILE AFTER
+                    f.close()
+                    print("[+] File downloaded! CLIENT SIDE")
+                    data = "Received " + filename + " of size " + str(filesize) + " bytes" 
+                elif " -> " not in data and "Created group chat" in data:
+                    portNo = int(data.split("@@")[1])
+                    data = data.split("@@")[0]
+
+
+                if not silent:
+                    self._logAll += str(data) + "\n"
+                    self.log.AppendText(str(data) + "\n")
+            except:
+                break
+
+    def deleteInList(self, name):
+        i = self.list.GetCount()
+        for x in range (0, i):
+            if (name == self.list.GetString(x)):
+                y = x
+        self.list.Delete(y)
+        self.Refresh()
+
     def disconnect(self,e):
         self.shutdown = True
         #self.rT.join()
-        self.s.send(("@@disconnected " + self.alias).encode())
-        self.s.close()
-        self.Close()
+        #self.s.send(("@@disconnected " + self.alias).encode())
+        #self.s.close()
+        self.MAINFRAME.GetParent().GetParent().removePage(self.title)
 
-class clientFrame(wx.Frame):
-    def __init__(self, *args, **kwargs):
-        style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
-        super(clientFrame, self).__init__(*args, **kwargs, style = style)
+    # FILTERS MESSAGES BY MESSAGES FROM AND TO CERTAIN PERSON
+    def filter(self, name):
+        ok1 = name + " -> "
+        ok2 = " -> " + name
+   
+        lines = self._logAll.split("\n")
+        for i in range(len(lines)-1,-1,-1):
+            if ok1 not in lines[i] and ok2 not in lines[i]:
+                del lines[i]
+            elif lines[i] == '\n':
+                del lines[i]
+ 
+        self.log.SetValue(self.defaultLog)
+        self.log.AppendText("Now chatting with " + name + "\n")
+        for i in lines:
+            self.log.AppendText(i+"\n")
+
+class MainTab(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+        self.MAINFRAME = parent
         self.initialize()
 
     def initialize(self):
         # ~AESTHETICS~
         self.SetSize(535,400)
-        self.mainPanel = wx.Panel(self)
         self.SetBackgroundColour("WHITE")
         
         # ADD HEADER PHOTO
         imgHeader = wx.Image("rsrcs/header2_2.jpg", wx.BITMAP_TYPE_ANY).Scale(315,130)
         imgHeader = wx.Bitmap(imgHeader)
-        self.header = wx.StaticBitmap(self.mainPanel, -1, imgHeader, (90,0), (315,130))
+        self.header = wx.StaticBitmap(self, -1, imgHeader, (90,0), (315,130))
 
         # ADD DISCONNECT BUTTON
         imgServer = wx.Image("rsrcs/disconnectButton.jpg", wx.BITMAP_TYPE_ANY).Scale(30,30)
         imgServer = wx.Bitmap(imgServer)
-        self.btnDisconnect = wx.BitmapButton(self.mainPanel, -1, imgServer, (490,100),(30,30))
+        self.btnDisconnect = wx.BitmapButton(self, -1, imgServer, (490,100),(30,30))
         self.btnDisconnect.Bind(wx.EVT_BUTTON, self.disconnect)
 
         # INITIALIZE LOG AS UNEDITABLE TEXT FIELD
-        self.log = wx.TextCtrl(self.mainPanel, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
+        self.log = wx.TextCtrl(self, style = wx.TE_READONLY | wx.TE_MULTILINE, pos=(0,130), size=(380,170))
 
         # INITIALIZE CHATBOX
-        self.chatBox = wx.TextCtrl(self.mainPanel, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
+        self.chatBox = wx.TextCtrl(self, style = wx.TE_PROCESS_ENTER, pos=(0,300), size=(380,25))
         self.chatBox.Bind(wx.EVT_TEXT_ENTER, self.sendMsg)
 
         # INITIALIZE FILE SELECTOR
-        self.fileBox = wx.FilePickerCtrl(self.mainPanel, style = wx.FLP_USE_TEXTCTRL | wx.FLP_FILE_MUST_EXIST, pos=(80,325))
-        self.sendFileBtn = wx.Button(self.mainPanel, label="Send File", pos=(280,328), size=(100,25))
+        self.fileBox = wx.FilePickerCtrl(self, style = wx.FLP_USE_TEXTCTRL | wx.FLP_FILE_MUST_EXIST, pos=(80,325))
+        self.sendFileBtn = wx.Button(self, label="Send File", pos=(280,328), size=(100,25))
         self.sendFileBtn.Bind(wx.EVT_BUTTON, self.sendFile)
         
         # INITIALIZE LIST BOX
         self.chatOptions = ["Global"]
-        self.list = wx.ListBox(self.mainPanel,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
+        self.list = wx.ListBox(self,pos=(380,130),size = (145,195),choices = self.chatOptions , style = wx.LB_NEEDED_SB | wx.LB_MULTIPLE)
         self.list.Bind(wx.EVT_LISTBOX, self.updateChat)
         self.list.SetSelection(0)
         self.chatMate = "Global"
@@ -260,19 +379,16 @@ class clientFrame(wx.Frame):
         # ADD GROUP CHAT BUTTON
         imgServer = wx.Image("rsrcs/grpchat.jpg", wx.BITMAP_TYPE_ANY).Scale(25,25)
         imgServer = wx.Bitmap(imgServer)
-        self.btnGrpchat = wx.BitmapButton(self.mainPanel, -1, imgServer, (430,100),(30,30))
+        self.btnGrpchat = wx.BitmapButton(self, -1, imgServer, (430,100),(30,30))
         self.btnGrpchat.Bind(wx.EVT_BUTTON, self.createGroupChat)
         self.btnGrpchat.Hide()
 
         # ADD CHATROOM BUTTON
         imgServer = wx.Image("rsrcs/chatroom.jpg", wx.BITMAP_TYPE_ANY).Scale(25,25)
         imgServer = wx.Bitmap(imgServer)
-        self.btnChatroom = wx.BitmapButton(self.mainPanel, -1, imgServer, (460,100),(30,30))
+        self.btnChatroom = wx.BitmapButton(self, -1, imgServer, (460,100),(30,30))
         self.btnChatroom.Bind(wx.EVT_BUTTON, self.createChatroom)
-        self.btnChatroom.Hide()
-
-        self.SetPosition((300,200))
-        self.Show()
+        #self.btnChatroom.Hide()
 
     def setAlias(self, name):
         # SETS ALIAS AND OTHER AESTHETIC STUFF
@@ -280,13 +396,14 @@ class clientFrame(wx.Frame):
         self.defaultLog = "USER LOG:    " + self.userName + "\n"
         self._logAll = "USER LOG:    " + self.userName + "\n"
         self.log.SetValue(self.defaultLog)
-        self.SetTitle("Welcome, " + self.userName)
 
     def createGroupChat(self, e):
-        print("MAKING GROUP CHAT")
+        msg = "@@creategrp@@" + str(self.chatMate).replace("[", "").replace("]", "").replace("'", "").replace(" ", "")
+        self.s.send(msg.encode())
+        time.sleep(.1)
 
     def createChatroom(self, e):
-        print("MAKING CHATROOM")
+        #print("MAKING CHATROOM")
         username = ""
         password = ""
         nameBox = wx.TextEntryDialog(None, "Enter Name of Group Chat", "Name", '')
@@ -295,8 +412,9 @@ class clientFrame(wx.Frame):
         passBox = wx.TextEntryDialog(None, "Enter password of Group Chat", "Password", '')
         if passBox.ShowModal() == wx.ID_OK:
             password = passBox.GetValue()
-        print(self.alias + "@@addCR@@"+ username + "@@" + password)
-        self.s.send((self.alias + "@@addCR@@"+ username + "@@" + password).encode())
+        msg = self.alias + "@@addCR@@"+ username + "@@" + password
+        self.s.send(msg.encode())
+        time.sleep(.1)
     
     def connect(self):
         self.tlock = threading.Lock()
@@ -344,13 +462,13 @@ class clientFrame(wx.Frame):
         self.chatMate = self.getReceivers()
         if type(self.chatMate) is str:
             self.filter(self.chatMate)
-            self.btnChatroom.Hide()
+            #self.btnChatroom.Hide()
             self.btnGrpchat.Hide()
         elif type(self.chatMate) is list and "Global" not in self.chatMate:
-            self.btnChatroom.Show()
+            #self.btnChatroom.Show()
             self.btnGrpchat.Show()
         elif "Global" in self.chatMate:
-            self.btnChatroom.Hide()
+            #self.btnChatroom.Hide()
             self.btnGrpchat.Hide()
         
     def sendMsg(self,e):
@@ -451,16 +569,33 @@ class clientFrame(wx.Frame):
                     # CLOSE FILE AFTER
                     f.close()
                     print("[+] File downloaded! CLIENT SIDE")
-                    data = "Received " + filename + " of size " + str(filesize) + " bytes"
-                elif " -> " not in data and "@@addCR" in data:
-                    silent = 1
+                    data = "Received " + filename + " of size " + str(filesize) + " bytes" 
+                elif " -> " not in data and "Created group chat" in data:
+                    portNo = int(data.split("@@")[1])
+                    groupName = data.split("@@")[2]
+                    data = data.split("@@")[0]
+                    wx.CallAfter(self.MAKENEWGRPTAB, portNo, groupName)
+                    self.rT.join()
+
+                    '''
+                    try:
+                        self.MAINFRAME.GetParent().GetParent().createGrpTab(portNo, groupName, self.alias)
+                    except:
+                        pass
+                        '''
                     
+                    #self.MAINFRAME.GetParent().GetParent().createGrpTab(portNo, groupName, self.alias)
 
                 if not silent:
                     self._logAll += str(data) + "\n"
                     self.log.AppendText(str(data) + "\n")
             except:
                 break
+
+    def MAKENEWGRPTAB(self, portNo, groupName):
+        print("HAPPENING AFTER THREAD CLOSES")
+        self.MAINFRAME.GetParent().GetParent().createGrpTab(portNo, groupName, self.alias)
+        Thread(target=self.receiving).start()
 
     def deleteInList(self, name):
         i = self.list.GetCount()
@@ -475,7 +610,7 @@ class clientFrame(wx.Frame):
         #self.rT.join()
         self.s.send(("@@disconnected " + self.alias).encode())
         self.s.close()
-        self.Close()
+        self.MAINFRAME.GetParent().GetParent().Close()
 
     # FILTERS MESSAGES BY MESSAGES FROM AND TO CERTAIN PERSON
     def filter(self, name):
@@ -494,6 +629,46 @@ class clientFrame(wx.Frame):
         for i in lines:
             self.log.AppendText(i+"\n")
 
+
+class clientFrame(wx.Frame):
+    def __init__(self, *args, **kwargs):
+        style = wx.DEFAULT_FRAME_STYLE & (~wx.CLOSE_BOX) & (~wx.MAXIMIZE_BOX)
+        super(clientFrame, self).__init__(*args, **kwargs, style = style)
+        self.initialize()
+
+    def initialize(self):
+        self.SetSize(535,430)
+        self.mainPanel = wx.Panel(self)
+        self.nb = wx.Notebook(self.mainPanel, pos=(0,0), size=(535,430))
+        self.MTab = MainTab(self.nb)
+        self.nb.AddPage(self.MTab, "Main Tab")
+
+        self.SetPosition((300,200))
+        self.Show()
+
+    def setAlias(self, name):
+        self.MTab.setAlias(name)
+        self.SetTitle("Welcome, " + name)
+    
+    def connect(self):
+        self.MTab.connect()
+
+    def initList(self):
+        self.MTab.initList()
+
+    def createGrpTab(self, portNo, groupName, alias):
+       newGTab = grpChatTab(self.nb, groupName)
+       newGTab.connect(portNo, groupName, alias)
+       self.nb.AddPage(newGTab, groupName)
+       #self.nb.ChangeSelection(1)
+
+    def removePage(self, title):
+        for index in range(self.nb.GetPageCount()):
+            if self.nb.GetPageText(index) == title:
+                self.nb.DeletePage(index)
+                #self.dataNoteBook.SendSizeEvent()
+                break
+    
 class client(wx.Frame):
     def __init__(self, *args, **kwargs):
         super(client, self).__init__(*args, **kwargs)
@@ -614,4 +789,4 @@ class client(wx.Frame):
 def main():
     clientApp = wx.App()
     client(None)
-    clientApp.MainLoop()
+    clientApp.MainLoop() 

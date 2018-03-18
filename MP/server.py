@@ -85,15 +85,18 @@ class serverFrame(wx.Frame):
             if portBox.ShowModal() == wx.ID_OK:
                 self.port = int(portBox.GetValue())
 
-        # SERVER
+        # SERVER SHIT
         self.host = '127.0.0.1'
 
         # MAPS ADDRESS TO NAME
         self.clients={}
         # MAPS ADDRESS TO PORT
         self.addresses={}
-
+        # MAPS GROUP TO NAME
+        self.groups = {}
+        # MAPS CHATROOM NAME TO PASSWORD AND USERS
         self.chatRooms = {}
+
 
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -192,7 +195,36 @@ class serverFrame(wx.Frame):
 
                 print("[-] Server done sending file to clients")
                 silent= 1
-            
+            # CASE: GROUP CHAT
+            elif "@@creategrp" in msg:
+                names = msg.split("@@")[2].split(",")
+                groupName = "Group " + str(len(self.groups)+1)
+                self.groups[groupName] = names
+                msg = names[0] + " Created group chat with you @@" + str(self.port) +"@@"+groupName
+
+                for temp in names:
+                    for client in self.clients:
+                        if (self.clients[client] == temp):
+                            client.send(msg.encode())
+                            print(str(msg) + " SENT FROM SERVER")
+                            time.sleep(.1)
+                silent = 1
+            # CASE: CREATING CHAT ROOM (the one with password)
+            elif "@@addCR@@" in msg and "->" not in msg:
+                error = False
+                owner = msg.split("@@")[0]
+                
+                groupname = msg.split("@@")[2]
+                grouppass = msg.split("@@")[3]
+                for x in self.chatRooms.keys():
+                    if x is groupname:
+                        error = True
+                if error is True:
+                    self.broadcast("ERROR in creating Chat Room with name " + groupname, owner, owner)
+                else:
+                    self.chatRooms[groupname] = [grouppass, []]
+                    self.broadcast("Created Chat Room " + groupname, owner, "Global")
+                silent = 1
             # CASE: NORMAL MESSAGE
             elif " -> " in msg:
                 name = msg.split(" -> ")[0]
@@ -217,25 +249,6 @@ class serverFrame(wx.Frame):
 
             if not silent:
                 self.broadcast(msg, name, receiver)
-
-            # CASE: CREATING CHAT ROOM (the one with password
-            if "@@addCR@@" in msg and "->" not in msg:
-                error = False
-                owner = msg.split("@@")[0]
-                
-                groupname = msg.split("@@")[2]
-                grouppass = msg.split("@@")[3]
-                for x in self.chatRooms.keys():
-                    if x is groupname:
-                        error = True
-                if error is True:
-                    #still not sure about this part - rolo
-                    self.broadcast("ERROR", owner, owner)
-                else:
-                    self.chatRooms[groupname] = [grouppass, []]
-                print(self.chatRooms[groupname][0])
-                    
-                
 
     # FUNCTION TO HANDLE PROPER SENDING OF MSG TO APPROPRIATE RECEIVERS
     def broadcast(self, msg, name, receiver):
