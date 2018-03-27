@@ -92,9 +92,11 @@ class serverFrame(wx.Frame):
         self.clients={}
         # MAPS ADDRESS TO PORT
         self.addresses={}
-        # MAPS GROUP TO NAME
+        # MAPS GROUP TO NAMES
         self.groups = {}
-        # MAPS CHATROOM NAME TO PASSWORD AND USERS
+        # MAPS ADDRESS TO GROUP NAME
+        self.groupchats = {}
+        # MAPS CHATROOM NAME TO PASSWORD AND USERS IN CHATROOM
         self.chatRooms = {}
 
 
@@ -138,20 +140,36 @@ class serverFrame(wx.Frame):
         while not self.quitting:
             msg = client.recv(1024)
             msg = msg.decode()
-
+            print("MSG RECEIVED")
             silent = 0
 
             # CASE: NEW CLIENT CONNECTS
             if "@@connected"  in msg and " -> " not in msg:
                 name = msg.split("@@connected ")[1]
-                self.clients[client] = name
-                receiver = "Global"
-                msg = name + " has joined Zirk chat"
+
+                # IF GROUP CHAT SENT CONNECTION REQUEST, ADD TO GROUPCHATS DICT
+                if "Group" in name:
+                    silent = 1
+                    self.groupchats[client] = name
+                else:
+                    self.clients[client] = name
+                    receiver = "Global"
+                    msg = name + " has joined Zirk chat"
+                print(self.groupchats)
             # CASE: NEW CLIENT WANTS TO INITIALIZE LIST OF ACTIVE USERS
             elif "@@initlist " in msg and " -> " not in msg:
                 name = msg.split("@@initlist ")[1]
                 receiver = name
-                msg = "@@initlist "
+                if "Group" in name:
+                    silent = 1
+                    msg = "@@initlist" 
+                    for group in self.groupchats:
+                        if name in self.groupchats[group]:
+                            for member in self.groups[name]:
+                                msg = msg + " " + member
+                    group.send(msg.encode())
+                else:
+                    msg = "@@initlist "
             # CASE: CLIENT SENDS FILE
             elif "sendfile@@" in msg:
                 name = msg.split(" -> ")[0]
@@ -195,19 +213,85 @@ class serverFrame(wx.Frame):
 
                 print("[-] Server done sending file to clients")
                 silent= 1
+            # CASE: GROUP FILE SEND
+            elif "sendfilegrp@@" in msg:
+                name = msg.split(" -> ")[0]
+                receiver = msg.split(":")[0].split(" -> ")[1]
+                filename = msg.split("@@")[1]
+                filesize = msg.split("@@")[2]
+                
+                # SENDS INITIAL MSG TO RECEIVERS TO PREPARE FOR FILE DOWNLOAD
+                msg = "sendfilegrp@@"+filename+"@@"+filesize
+                self.multicast(msg, receiver)
+
+                # SERVER MAKES OWN COPY OF FILE BEFORE SENDING PACKETS TO RECEIVERS
+                # WRITE SERVER COPY OF FILE
+                filesize = float(filesize)
+                f = open("SERVER-COPY_"+filename, 'wb')
+                toWrite = client.recv(1024)
+                totalRecv = len(toWrite)
+                f.write(toWrite)
+                while totalRecv < filesize:
+                    toWrite = client.recv(1024)
+                    totalRecv += len(toWrite)
+                    f.write(toWrite)
+                    print("{0:.2f}".format((totalRecv/float(filesize)) * 100) + "percent done: SERVER SIDE")
+
+                print("[-] File downloaded from client to server, file closed")
+                f.close()
+                print("[-] File closed, now sending to recipients")
+
+                # SERVER NOW SENDS FILE TO RECEIVERS BY READING AND SENDING PER KILOBYTE
+                with open("SERVER-COPY_"+filename, 'rb') as file:
+                    bytesToSend = file.read(1024)
+                    while bytesToSend:
+                        for group in self.groupchats:
+                            if receiver in self.groupchats[group]:
+                                group.send(bytesToSend)
+                        bytesToSend = file.read(1024)
+
+                print("[-] Server done sending file to clients")
+                silent= 1
             # CASE: GROUP CHAT
             elif "@@creategrp" in msg:
                 names = msg.split("@@")[2].split(",")
                 groupName = "Group " + str(len(self.groups)+1)
                 self.groups[groupName] = names
+                print(self.groups)
                 msg = names[0] + " Created group chat with you @@" + str(self.port) +"@@"+groupName
 
+                # TELL EVERY SELECTED USER TO OPEN GROUPCHAT TAB
                 for temp in names:
                     for client in self.clients:
                         if (self.clients[client] == temp):
                             client.send(msg.encode())
-                            print(str(msg) + " SENT FROM SERVER")
-                            time.sleep(.1)
+                            time.sleep(.2)
+ 
+                silent = 1
+            # CASE: INVITE TO GROUP CHAT
+            elif "@@addtogrp" in msg and " -> " not in msg:
+                tempclient = client
+                
+                inviter = msg.split("@@addtogrp ")[1].split("@@")[0]
+                new = msg.split("@@addtogrp ")[1].split("@@")[2]
+                gname = msg.split("@@addtogrp ")[1].split("@@")[1]
+                self.groups[gname].append(new)
+
+                # NOTIFY EXISTING MEMBERS OF NEW MEMBER
+                msg = new + " has joined the group"
+                for group in self.groupchats:
+                    if gname in self.groupchats[group]:
+                        group.send(msg.encode())
+                        #time.sleep(.2)
+
+                # TELL EVERY NEW MEMBER TO OPEN GROUPCHAT TAB
+                msg = inviter + " Created group chat with you @@" + str(self.port) +"@@"+gname
+                for client in self.clients:
+                    if (self.clients[client] == new):
+                        client.send(msg.encode())
+                        #time.sleep(.2)
+
+                client = tempclient
                 silent = 1
             # CASE: CREATING CHAT ROOM (the one with password)
             elif "@@addCR@@" in msg and "->" not in msg:
@@ -223,32 +307,105 @@ class serverFrame(wx.Frame):
                     self.broadcast("ERROR in creating Chat Room with name " + groupname, owner, owner)
                 else:
                     self.chatRooms[groupname] = [grouppass, []]
-                    self.broadcast("Created Chat Room " + groupname, owner, "Global")
+                    self.chatRooms[groupname][1].append(owner)
+                    msg = owner + " Created chat room @@" + str(self.port) + "@@"+ groupname 
+                    self.broadcast(msg, owner, "Global")
                 silent = 1
+            elif " -> " not in msg and "@@checkpassword" in msg:
+                silent = 1
+                values = msg.split("@@")
+                joiningUser = values[0]
+                chatroomName = values[2]
+                chatroomPass = values[3]
+                #print(chatroomPass)
+                #print(self.chatRooms[chatroomName][0])
+                if chatroomPass == self.chatRooms[chatroomName][0]:
+                    self.chatRooms[chatroomName][1].append(joiningUser)
+                    self.broadcast(str(self.port) + "Joining chat room - " + chatroomName, joiningUser, joiningUser)
+                elif chatroomPass != self.chatRooms[chatroomName][0]:
+                    self.broadcast("ERROR: Invalid password for chat room - " + chatroomName, joiningUser, joiningUser)
+
             # CASE: NORMAL MESSAGE
             elif " -> " in msg:
                 name = msg.split(" -> ")[0]
                 receiver = msg.split(" -> ")[1].split(": ")[0]
 
             # UPDATE SERVER LOG
-            self.log.AppendText(time.ctime(time.time()) + str(self.addresses[client]) + ": :" + str(msg) + "\n")
+            if not silent:
+                self.log.AppendText(time.ctime(time.time()) + str(self.addresses[client]) + ": :" + str(msg) + "\n")
 
+            # CASE: CLIENT DISCONNECTS FROM GROUP
+            if "@@disconnectedFromGroup" in msg and " -> " not in msg:
+                client.close()
+                name = msg.split(" ")[1] 
+                receiver = msg.split(" ")[2] + " " + msg.split(" ")[3]
+                address = receiver + ":" + name
+                msg = name + " has left the group"
+                self.groups[receiver].remove(name)
+                for group in self.groupchats:
+                    if (self.groupchats[group] == address):
+                        del self.groupchats[group]
+                        break
+                self.multicast(msg, receiver)
+                break
             # CASE: CLIENT DISCONNECTS
-            if "@@disconnected" in msg and " -> " not in msg:
+            elif "@@disconnected" in msg and " -> " not in msg:
                 client.close()
                 name = msg.split("@@disconnected ")[1]
                 receiver = "Global"
-                msg = name + " has disconnected"
+
                 for client in self.clients:
                     if (self.clients[client] == name):
                         del self.clients[client]
                         del self.addresses[client]
                         break
+                print("ABOUT TO ENTER")
+                # TEMPORARY DICTIONARY TO HOLD NEW LIST OF USERS PER GROUP
+                tempdict = {}
+                '''
+                for group in self.groupchats:
+                    print("ENTERED")
+                    print(group)
+                    address = ""
+                    '''
+                for members in self.groups:
+                    for member in self.groups[members]:
+                        print(self.groups[members])
+                        print(members)
+                        print(member + " HERE")
+                        if member == name:
+                            self.groups[members].remove(name)
+                            print(self.groups[members])
+                            print(members)
+                            print(member + " MEMBER TO BE REMOVED")
+                            print(name + " Value of name")
+                            print(str(tempdict) + "THIS IS THE TEMP DICK WHEN MEMBER == NAME")
+                
+                for group in self.groupchats:
+                    if self.groupchats[group].split(":")[1] != name:
+                        print(str(group) + " THIS IS GROUP")
+                        print(self.groupchats[group] + " THIS IS THE ENTRY FOR DICK")
+                        tempdict[group] = self.groupchats[group]
+                        print(str(tempdict) + "THIS IS THE TEMP DICK WHEN MEMBER != NAME")
+
+                self.groupchats = tempdict
+
+                msg = name + " has left the group"
+                
+                for group in self.groups:
+                    self.multicast(msg,group)
+                    
+                msg = name + " has disconnected"
                 self.broadcast(msg, name, receiver)
                 break
-
+            
             if not silent:
-                self.broadcast(msg, name, receiver)
+                # NORMAL CHAT (PRIVATE OR GLOBAL)
+                if "Group" not in receiver:
+                    self.broadcast(msg, name, receiver)
+                # MULTICAST (GROUPCHAT)
+                else:
+                    self.multicast(msg, receiver)
 
     # FUNCTION TO HANDLE PROPER SENDING OF MSG TO APPROPRIATE RECEIVERS
     def broadcast(self, msg, name, receiver):
@@ -267,13 +424,22 @@ class serverFrame(wx.Frame):
                             client.send((msg + self.clients[i]).encode())
                             print(str(msg) + " SENT FROM SERVER")
                             time.sleep(.1)
+                        for i in self.chatRooms.keys():
+                            client.send((msg + i + " @chatroom").encode())
+                            time.sleep(.1)
                         break
             else:
                 for client in self.clients:
                     if (self.clients[client] == receiver or self.clients[client] == name):
                         client.send(msg.encode())
                         print(str(msg) + " SENT FROM SERVER")
-        
+
+    # FUNCTION TO HANDLE PROPER SENDING OF MSG TO APPROPRIATE GROUPCHATS
+    def multicast(self, msg, receiver):
+        for group in self.groupchats:
+            if receiver in self.groupchats[group]:
+                group.send(msg.encode())
+                print("MESSAGE SENT TO GROUP CHAT: " + receiver)
         
     # THREAD TO LISTEN TO INCOMING CONNECTIONS
     def listening(self):
