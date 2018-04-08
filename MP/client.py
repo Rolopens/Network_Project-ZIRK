@@ -593,6 +593,8 @@ class MainTab(wx.Panel):
             #self.btnChatroom.Hide()
             if self.chatMate != "Global" and self.chatMate != self.alias:
                 self.btnGame.Show()
+            else:
+                self.btnGame.Hide()
             self.btnGrpchat.Hide()
         elif type(self.chatMate) is list and "Global" not in self.chatMate and len(self.chatMate) > 1:
             #self.btnChatroom.Show()
