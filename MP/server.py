@@ -202,7 +202,7 @@ class serverFrame(wx.Frame):
                 # SERVER MAKES OWN COPY OF FILE BEFORE SENDING PACKETS TO RECEIVERS
                 # WRITE SERVER COPY OF FILE
                 filesize = float(filesize)
-                f = open("SERVER-COPY_"+filename, 'wb')
+                f = open("serverfiles/SERVER-COPY_"+filename, 'wb')
                 toWrite = client.recv(1024)
                 totalRecv = len(toWrite)
                 f.write(toWrite)
@@ -217,7 +217,7 @@ class serverFrame(wx.Frame):
                 print("[-] File closed, now sending to recipients")
 
                 # SERVER NOW SENDS FILE TO RECEIVERS BY READING AND SENDING PER KILOBYTE
-                with open("SERVER-COPY_"+filename, 'rb') as file:
+                with open("serverfiles/SERVER-COPY_"+filename, 'rb') as file:
                     bytesToSend = file.read(1024)
                     while bytesToSend:
                         if receiver == "Global":
@@ -245,7 +245,7 @@ class serverFrame(wx.Frame):
                 # SERVER MAKES OWN COPY OF FILE BEFORE SENDING PACKETS TO RECEIVERS
                 # WRITE SERVER COPY OF FILE
                 filesize = float(filesize)
-                f = open("SERVER-COPY_"+filename, 'wb')
+                f = open("serverfiles/SERVER-COPY_"+filename, 'wb')
                 toWrite = client.recv(1024)
                 totalRecv = len(toWrite)
                 f.write(toWrite)
@@ -260,7 +260,7 @@ class serverFrame(wx.Frame):
                 print("[-] File closed, now sending to recipients")
 
                 # SERVER NOW SENDS FILE TO RECEIVERS BY READING AND SENDING PER KILOBYTE
-                with open("SERVER-COPY_"+filename, 'rb') as file:
+                with open("serverfiles/SERVER-COPY_"+filename, 'rb') as file:
                     bytesToSend = file.read(1024)
                     while bytesToSend:
                         for group in self.groupchats:
@@ -284,7 +284,7 @@ class serverFrame(wx.Frame):
                 # SERVER MAKES OWN COPY OF FILE BEFORE SENDING PACKETS TO RECEIVERS
                 # WRITE SERVER COPY OF FILE
                 filesize = float(filesize)
-                f = open("SERVER-COPY_"+filename, 'wb')
+                f = open("serverfiles/SERVER-COPY_"+filename, 'wb')
                 toWrite = client.recv(1024)
                 totalRecv = len(toWrite)
                 f.write(toWrite)
@@ -299,7 +299,7 @@ class serverFrame(wx.Frame):
                 print("[-] File closed, now sending to recipients")
 
                 # SERVER NOW SENDS FILE TO RECEIVERS BY READING AND SENDING PER KILOBYTE
-                with open("SERVER-COPY_"+filename, 'rb') as file:
+                with open("serverfiles/SERVER-COPY_"+filename, 'rb') as file:
                     bytesToSend = file.read(1024)
                     while bytesToSend:
                         for x in self.chatRoomsAddr:

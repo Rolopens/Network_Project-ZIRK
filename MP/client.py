@@ -497,6 +497,13 @@ class MainTab(wx.Panel):
         self.btnChatroom.Bind(wx.EVT_BUTTON, self.createChatroom)
         #self.btnChatroom.Hide()
 
+        # ADD START GAME BUTTON
+        imgServer = wx.Image("rsrcs/jap.png", wx.BITMAP_TYPE_ANY).Scale(25,25)
+        imgServer = wx.Bitmap(imgServer)
+        self.btnGame = wx.BitmapButton(self, -1, imgServer, (0,100),(30,30))
+        self.btnGame.Bind(wx.EVT_BUTTON, self.startGame)
+        self.btnGame.Hide()
+
     def setAlias(self, name):
         # SETS ALIAS AND OTHER AESTHETIC STUFF
         self.userName = name
@@ -533,8 +540,11 @@ class MainTab(wx.Panel):
                 temp = passwordTry.GetValue()
                 self.s.send((self.alias+"@@checkpassword@@"+selected+"@@"+temp).encode())
             
-    
-    def connect(self):
+    def startGame(self, e):
+        print(self.alias + " IS STARTING SHIRITORI WITH " + self.chatMate)
+
+
+    def connect(self): 
         self.tlock = threading.Lock()
         self.shutdown = False
 
@@ -581,9 +591,12 @@ class MainTab(wx.Panel):
         if type(self.chatMate) is str:
             self.filter(self.chatMate)
             #self.btnChatroom.Hide()
+            if self.chatMate != "Global" and self.chatMate != self.alias:
+                self.btnGame.Show()
             self.btnGrpchat.Hide()
         elif type(self.chatMate) is list and "Global" not in self.chatMate and len(self.chatMate) > 1:
             #self.btnChatroom.Show()
+            self.btnGame.Hide()
             self.btnGrpchat.Show()
         elif "Global" in self.chatMate:
             #self.btnChatroom.Hide()
@@ -621,10 +634,10 @@ class MainTab(wx.Panel):
         if filename != "":
 
             '''WINDOWS USERS!'''
-            #file = filename.split("\\")[len(filename.split("\\"))-1]
+            file = filename.split("\\")[len(filename.split("\\"))-1]
 
             '''MAC USERS!'''
-            file = filename.split("/")[len(filename.split("/"))-1]
+            #file = filename.split("/")[len(filename.split("/"))-1]
 
             filesize = os.path.getsize(filename)
             print(file)
